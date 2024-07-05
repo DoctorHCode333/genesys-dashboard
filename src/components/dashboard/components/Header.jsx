@@ -17,10 +17,10 @@ export default function Header() {
     >
       <Stack sx={{ maxWidth: 500 }}>
         <Typography variant="h4" component="h1">
-          Dashboard
+          Genesys Cloud Agent Dashboard
         </Typography>
         <Typography sx={{ color: 'text.secondary' }}>
-          Real-time analytics to improve user engagement and guide strategy.
+          Real-time Agent Monitoring to provide insight inorder to improve overall performance!
         </Typography>
       </Stack>
       <Stack direction="row" sx={{ gap: 1, width: { xs: '100%', sm: 'auto' } }}>

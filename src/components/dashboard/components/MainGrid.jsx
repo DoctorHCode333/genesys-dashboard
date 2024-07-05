@@ -40,7 +40,7 @@ const data = [
   },
 ];
 
-export default function MainGrid() {
+export default function MainGrid(props) {
   return (
     <React.Fragment>
       {/* cards */}
@@ -64,9 +64,11 @@ export default function MainGrid() {
           <Stack spacing={2}>
             <PageViewsBarChart />
             <PageViewsChart />
-            <CustomizedDataGrid />
+            <CustomizedDataGrid rows={props.usersData.rows} columns={props.usersData.columns}/>
+            {/* <CustomizedDataGrid rows={props.evalData}/> */}
           </Stack>
         </Grid>
+
         <Grid size={{ xs: 12, md: 4, lg: 3 }}>
           <Stack spacing={2} direction={{ xs: 'column', sm: 'row', md: 'column' }}>
             <CustomizedTreeView />

@@ -16,9 +16,8 @@ const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
 export default function NavbarBreadcrumbs() {
   return (
     <StyledBreadcrumbs aria-label="breadcrumb">
-      <SitemarkIcon />
       <Typography sx={{ fontWeight: 'medium', color: 'text.primary' }}>
-        Project (Production)
+        Project
       </Typography>
     </StyledBreadcrumbs>
   );

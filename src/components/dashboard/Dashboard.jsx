@@ -11,7 +11,7 @@ import Navbar from './components/Navbar';
 import Header from './components/Header';
 import MainGrid from './components/MainGrid';
 
-export default function Dashboard() {
+export default function Dashboard(props) {
   const [mode, setMode] = React.useState('light');
   const [showCustomTheme, setShowCustomTheme] = React.useState(true);
   const dashboardTheme = createTheme(getDashboardTheme(mode));
@@ -50,8 +50,7 @@ export default function Dashboard() {
             }}
           >
             <Header />
-            <MainGrid />
-            <Copyright sx={{ my: 4 }} />
+            <MainGrid {...props}/>
           </Container>
         </Box>
         <ToggleCustomTheme
