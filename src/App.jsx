@@ -2,23 +2,23 @@ import { useEffect,useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import {fetchUsersData,fetchEvalData, authenticate} from './utils/genesysCloudApi'
+import {fetchUsersData, fetchEvalData, authenticate} from './utils/genesysCloudApi'
 import Dashboard from './components/dashboard/Dashboard'
 
-const App = () => { 
-  const [props, setProps] = useState({});
-  const [flag, setFlag] = useState(true);
+const App = (props) => { 
+  const { flag, setFlag, setUsers, setEvalData, filterUsers, query} = props;
   authenticate();
   useEffect(() => {
     const getData = async () => {
       try {
-        const usersData = await fetchUsersData();
-        const evalData = await fetchEvalData();
-        if(usersData){
+        const userDataResponse = await fetchUsersData();
+        const evalDataResponse = await fetchEvalData();
+        if(userDataResponse && evalDataResponse){
           setFlag(false)
         }
-       setProps({usersData,evalData})
        
+        setUsers(userDataResponse)
+        setEvalData(evalDataResponse)
       } catch (error) {
         console.log("Error while fetching data from genesys cloud",error);
       }
@@ -26,6 +26,10 @@ const App = () => {
     };
     getData();
   }, []);
+
+  useEffect(() => {
+    filterUsers(query);
+  }, [query,filterUsers]);
 
   if(flag){
     return(<div>Loading...</div>)

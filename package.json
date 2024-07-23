@@ -2,29 +2,32 @@
   "name": "genesys-dashboard",
   "private": true,
   "version": "0.0.0",
-  "homepage": "genesys-dashboard",
+  "homepage": "https://doctorhcode333.github.io/genesys-dashboard",
   "type": "module",
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "gh-pages -d dist",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^5.15.21",
-    "@mui/material": "^5.15.21",
+    "@mui/material": "^5.16.4",
     "@mui/x-charts": "^7.8.0",
     "@mui/x-data-grid": "^7.8.0",
     "@mui/x-date-pickers": "^7.8.0",
     "@mui/x-tree-view": "^7.8.0",
+    "@reduxjs/toolkit": "^2.2.6",
     "dayjs": "^1.11.11",
     "purecloud-platform-client-v2": "^196.0.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-redux": "^9.1.2",
+    "react-router-dom": "^6.25.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

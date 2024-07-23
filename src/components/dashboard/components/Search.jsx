@@ -10,7 +10,7 @@ export default function Search() {
       <OutlinedInput
         size="small"
         id="search"
-        placeholder="Search…"
+        label="Search Agents"
         sx={{ flexGrow: 1 }}
         startAdornment={
           <InputAdornment position="start" sx={{ color: 'text.primary' }}>

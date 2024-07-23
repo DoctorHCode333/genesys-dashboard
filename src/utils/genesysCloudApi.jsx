@@ -4,7 +4,7 @@ import platformClient from 'purecloud-platform-client-v2';
 const client = platformClient.ApiClient.instance;
 const { clientId, redirectUri } = clientConfig;
 
-client.setEnvironment(platformClient.PureCloudRegionHosts.us_east_1); // Genesys Cloud region
+client.setEnvironment(platformClient.PureCloudRegionHosts.us_west_2); // Genesys Cloud region
 
 let userApi = new platformClient.UsersApi();
 let qualityApi = new platformClient.QualityApi();
@@ -15,7 +15,7 @@ let opts = {
     //   "expand": ["expand_example"], // [String] | variable name requested by expand list
     //   "previousPage": "previousPage_example", // String | Previous page token
     //   "conversationId": "conversationId_example", // String | conversationId specified
-    "agentUserId": "337984b2-cf2f-49c8-84e9-3c2bc7b1f197", // String | user id of the agent
+    "agentUserId": "406f7191-4166-441d-b765-d493e02ffb23", // String | user id of the agent
     //   "agentTeamId": "agentTeamId_example", // String | team id of the agent
     //   "evaluatorUserId": "evaluatorUserId_example", // String | evaluator user id
     //   "assigneeUserId": "assigneeUserId_example", // String | assignee user id
@@ -61,13 +61,13 @@ export const fetchUsersData = async () => {
             const rows = data.entities.map((user) => ({
                 id: user.id || 'N/A',
                 divisionId: user.division ? user.division.id : 'N/A',
-                email: user.email || 'N/A',
+                name: user.name || 'N/A',
                 state: user.state || 'N/A',
             }));
             const columns = [
                 { field: 'id', headerName: 'ID', width: 300 },
                 { field: 'divisionId', headerName: 'Division Id', width: 300 },
-                { field: 'email', headerName: 'E-mail / Username', width: 300 },
+                { field: 'name', headerName: 'Username', width: 300 },
                 { field: 'state', headerName: 'State', width: 80 },
             ];
 
@@ -75,6 +75,7 @@ export const fetchUsersData = async () => {
                 rows,
                 columns,
             }
+            //console.log(transformedUserData);
             return transformedUserData;
         } else {
             return [];
@@ -88,36 +89,29 @@ export const fetchUsersData = async () => {
 export const fetchEvalData = async () => {
     try {
         const evalData = await qualityApi.getQualityEvaluationsQuery(opts)
-        console.log(evalData);
-        // if (evalData && evalData.entities) {
-        //     rows =  evalData.entities.map((user) => ({
+        //console.log(evalData);
+        if (evalData && evalData.entities) {
+            const rows = evalData.entities.map((user) => ({
+                id: user.agent.id || 'N/A',
+                evaluatorId: user.evaluator.id ? user.evaluator.id : 'N/A',
+                evaluationScore: user.evaluationSource.id || 'N/A',
+                status: user.status || 'N/A',
+            }));
+            const columns = [
+                { field: 'id', headerName: 'Agent ID', width: 300 },
+                { field: 'evaluatorId', headerName: 'Evaluator', width: 300 },
+                { field: 'evaluationScore', headerName: 'Evaluation Score', width: 300 },
+                { field: 'status', headerName: 'Status', width: 80 },
+            ];
 
-        //   divisionId: user.division ? user.division.id : 'N/A',
-        //   email: user.email || 'N/A',
-        //   state: user.state || 'N/A',
-        //   username: user.username || 'N/A',
-        // }));
-        // const columns = [
-        //     { field: 'id', headerName: 'ID', width: 90 },
-        //     { field: 'pageTitle', headerName: 'Page Title', width: 200 },
-        //     { field: 'eventCount', headerName: 'Event Count', width: 130 },
-        //     { field: 'users', headerName: 'Users', width: 100 },
-        //     {
-        //       field: 'viewsPerUser',
-        //       headerName: 'Views per User',
-        //       width: 130,
-        //     },
-        //     { field: 'averageTime', headerName: 'Average Time', width: 130 },
-        //     { field: 'conversions', headerName: 'Conversions', width: 120 },
-        //   ];
-        // transformedUserData = {
-        //     rows,
-        //     columns,
-        // }
-        // } else {
-        // return [];
-        // }
-        return evalData;
+            const transformedEvalData = {
+                rows,
+                columns,
+            }
+            return transformedEvalData;
+        } else {
+            return [];
+        }
     } catch (err) {
         console.log("There was a failure calling getQualityEvaluationsQuery");
         console.error(err);

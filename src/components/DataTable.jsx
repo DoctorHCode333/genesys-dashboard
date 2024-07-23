@@ -64,7 +64,7 @@ const DataTable = ({ token }) => {
         setQueues(response.data.entities);
        
       } catch (error) {
-        console.error('Error fetching conversations:', error);
+        console.error('Error fetching queues:', error);
       }
     };
 

@@ -1,10 +1,24 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './index.css'
+import App from './App'
+import {connect} from 'react-redux'
+import {bindActionCreators} from 'redux'
+import * as actions from './redux/actions'
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+
+function mapStateToProps(state){
+    return{
+        flag: state.setFlag,
+        userData: state.filterUserData,
+        evalData: state.setEvalData,
+        query: state.setQuery,
+
+    }
+}
+
+function mapDispatchToProps(dispatch){
+    return bindActionCreators({...actions}, dispatch)
+     
+}
+
+const Main = connect(mapStateToProps, mapDispatchToProps)(App)
+
+export default Main

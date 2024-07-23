@@ -1,5 +1,4 @@
 export const clientConfig = {
-    clientId: 'e0b35ccc-9d53-4f49-9850-902b2a2c4213',
+    clientId: '94c0dc29-62f4-49a2-82a2-d6e120a18b8f',
     redirectUri: 'http://localhost:3000',
-    offlinePresenceId: 'ccf3c10a-aa2c-4845-8e8d-f59fa48c58e5',
 }
