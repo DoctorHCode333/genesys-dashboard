@@ -100,9 +100,9 @@ export default function MainGrid(props) {
                   }}
                   InputLabelProps={{
                     sx: {
-                      fontSize: "1.5rem",
-                      top: "-8px",
-                      left:"20px",
+                      fontSize: "1.8rem",
+                      top: "-15px",
+                      left:"5px",
                     },
                   }}
                   sx={{
