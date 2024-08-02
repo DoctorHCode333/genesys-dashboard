@@ -3,6 +3,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Search from './Search';
 import CustomDatePicker from './CustomDatePicker';
+import { Box } from '@mui/material';
 
 export default function Header() {
   return (
@@ -15,17 +16,28 @@ export default function Header() {
         my: 2,
       }}
     >
-      <Stack sx={{ maxWidth: 500 }}>
-        <Typography variant="h4" component="h1">
-          Genesys Cloud Agent Dashboard
+      {/* <Stack sx={{ maxWidth: 1000 }}>
+        <Typography variant="h2" component="h1">
+          Interaction Categories Dashboard
         </Typography>
-        <Typography sx={{ color: 'text.secondary' }}>
-          Real-time Agent Monitoring to provide insight inorder to improve overall performance!
-        </Typography>
-      </Stack>
+      </Stack> */}
       <Stack direction="row" sx={{ gap: 1, width: { xs: '100%', sm: 'auto' } }}>
-        <Search />
-        <CustomDatePicker />
+        <Box
+         sx={{
+          boxShadow: 0,
+          //bgcolor: 'transparent',
+          backgroundImage: 'none',
+          alignItems: 'center',
+          backgroundColor: '#f57c00',
+          borderBottom: '5px solid',
+         }}
+        >
+          <Typography variant="h6" component="h6">From</Typography>
+          <CustomDatePicker />
+          <Typography variant="h6" component="h6">To</Typography>
+          <CustomDatePicker />
+        </Box>
+        
       </Stack>
     </Stack>
   );

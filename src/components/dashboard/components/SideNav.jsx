@@ -54,7 +54,7 @@ function SideNav({ open, toggleDrawer, mode, toggleColorMode }) {
               sx={{ width: 24, height: 24 }}
             />
             <Typography component="p" variant="h6">
-              Riley Carter
+              Harshvardhan Bawake
             </Typography>
           </Stack>
           <MenuButton showBadge>

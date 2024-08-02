@@ -16,25 +16,18 @@ import { Box } from '@mui/material';
 
 const data = [
   {
-    title: "Users",
+    title: "Interactions",
     value: "14k",
     interval: "Last 30 days",
     trend: "up",
     data: [2, 4, 3, 5, 7, 6, 8, 10],
   },
   {
-    title: "Conversions",
+    title: "Categories",
     value: "325",
     interval: "Last 30 days",
     trend: "down",
     data: [10, 7, 6, 8, 5, 4, 4, 2],
-  },
-  {
-    title: "Event count",
-    value: "200k",
-    interval: "Last 30 days",
-    trend: "neutral",
-    data: [5, 4, 6, 3, 4, 3, 7, 6],
   },
   {
     title: "Engagements",
@@ -54,15 +47,15 @@ export default function MainGrid(props) {
   return (
     <React.Fragment>
       {/* cards */}
-      <Grid container spacing={2} columns={12}>
+      <Grid container spacing={2} columns={3}>
         {data.map((card, index) => (
           <Grid key={index} size={{ xs: 6, sm: 3, md: 2, lg: 2.25 }}>
             <StatCard {...card} />
           </Grid>
         ))}
-        <Grid size={{ xs: 12, md: 4, lg: 3 }}>
+        {/* <Grid size={{ xs: 12, md: 4, lg: 3 }}>
           <HighlightedCard />
-        </Grid>
+        </Grid> */}
       </Grid>
       <Grid
         container
@@ -72,15 +65,14 @@ export default function MainGrid(props) {
       >
         <Grid size={{ xs: 12, md: 8, lg: 9 }}>
           <Stack spacing={2}>
-            <PageViewsBarChart />
-            <PageViewsChart />
+            
             <Box sx={{ m: 4 }}>
               <Box sx={{ mt: 4 }}>
                 <TextField
                   id="standard-basic"
                   variant="standard"
                   fullWidth
-                  label="Search Agents"
+                  label="Search Categories"
                   type="search"
                   value={query}
                   onChange={handleSearch}
@@ -119,6 +111,8 @@ export default function MainGrid(props) {
               columns={userData.filteredUsers.columns}
             />
             {/* <CustomizedDataGrid rows={evalData.rows} columns={evalData.columns}/> */}
+            <PageViewsBarChart />
+            <PageViewsChart />
           </Stack>
         </Grid>
 

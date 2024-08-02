@@ -15,6 +15,8 @@ import MenuButton from './MenuButton';
 import NavbarBreadcrumbs from './NavbarBreadcrumbs';
 import OptionsMenu from './OptionsMenu';
 
+
+
 const Toolbar = styled(MuiToolbar)({
   maxWidth: 1538,
   width: '100%',
@@ -58,10 +60,11 @@ function Navbar({ mode, toggleColorMode }) {
       position="fixed"
       sx={(theme) => ({
         boxShadow: 0,
-        bgcolor: 'transparent',
+        //bgcolor: 'transparent',
         backgroundImage: 'none',
         alignItems: 'center',
-        borderBottom: '1px solid',
+        backgroundColor: '#f57c00',
+        borderBottom: '5px solid',
         borderColor: theme.palette.divider,
       })}
     >
@@ -107,11 +110,11 @@ function Navbar({ mode, toggleColorMode }) {
             toggleColorMode={toggleColorMode}
           />
         </Stack>
-        <Tabs value={value} onChange={handleChange} aria-label="navbar tabs">
+        {/* <Tabs value={value} onChange={handleChange} aria-label="navbar tabs">
           <Tab label="Home" {...a11yProps(0)} />
           <Tab label="Analytics" {...a11yProps(1)} />
           <Tab label="Clients" {...a11yProps(2)} />
-        </Tabs>
+        </Tabs> */}
       </Toolbar>
     </AppBar>
   );
