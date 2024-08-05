@@ -1,7 +1,7 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import { styled } from '@mui/material/styles';
-
+import Typography from "@mui/material/Typography";
 import AppBar from '@mui/material/AppBar';
 import Stack from '@mui/material/Stack';
 import MuiToolbar from '@mui/material/Toolbar';
@@ -14,7 +14,7 @@ import SideNav from './SideNav';
 import MenuButton from './MenuButton';
 import NavbarBreadcrumbs from './NavbarBreadcrumbs';
 import OptionsMenu from './OptionsMenu';
-
+import VoyaImage from '../../../assets/voya-financial--600.png'; 
 
 
 const Toolbar = styled(MuiToolbar)({
@@ -80,7 +80,14 @@ function Navbar({ mode, toggleColorMode }) {
             display: { xs: 'none', md: 'flex' },
           }}
         >
-          <NavbarBreadcrumbs />
+          <img src={VoyaImage} alt="" style={{width:"500px;!important",height:"80px"}}/>
+          <Typography sx={{
+            fontSize:"24px",
+          }}>
+            INTERACTION CATEGORIES DASHBOARD
+          </Typography>
+          {/* <img src="../" alt="" /> */}
+          {/* <NavbarBreadcrumbs /> */}
           <Stack direction="row" sx={{ gap: 1 }}>
             <MenuButton showBadge>
               <NotificationsRoundedIcon />

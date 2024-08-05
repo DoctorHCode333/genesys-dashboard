@@ -49,7 +49,7 @@ function SideNav({ open, toggleDrawer, mode, toggleColorMode }) {
           <Stack direction="row" sx={{ gap: 1, alignItems: 'center', flexGrow: 1 }}>
             <Avatar
               sizes="small"
-              alt="Riley Carter"
+              alt="Harshvardhan Bawake"
               src="/static/images/avatar/7.jpg"
               sx={{ width: 24, height: 24 }}
             />

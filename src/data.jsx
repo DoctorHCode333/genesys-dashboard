@@ -11,6 +11,13 @@ export const initialUserData = {
 
 export const evalData = {};
 
+export const categories = {};
+
+
+export const conversationUser = {};
+
+export const conversations = {};
+
 export const query = '';
 
 export const flag = true;

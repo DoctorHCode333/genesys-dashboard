@@ -1,44 +1,47 @@
-import * as React from 'react';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Search from './Search';
-import CustomDatePicker from './CustomDatePicker';
-import { Box } from '@mui/material';
+import * as React from "react";
+import Stack from "@mui/material/Stack";
+
+import Search from "./Search";
+import CustomDatePicker from "./CustomDatePicker";
+import { Box, Typography } from "@mui/material";
 
 export default function Header() {
   return (
     <Stack
-      direction={{ xs: 'column', md: 'row' }}
-      sx={{
-        alignItems: { xs: 'flex-start', md: 'flex-end' },
-        justifyContent: 'space-between',
-        gap: 2,
-        my: 2,
-      }}
+    direction="column"
+    sx={{
+      gap: 1,
+      width: { xs: "100%", sm: "auto" },
+      alignItems: "left",
+    }}
     >
-      {/* <Stack sx={{ maxWidth: 1000 }}>
-        <Typography variant="h2" component="h1">
-          Interaction Categories Dashboard
-        </Typography>
-      </Stack> */}
-      <Stack direction="row" sx={{ gap: 1, width: { xs: '100%', sm: 'auto' } }}>
-        <Box
-         sx={{
+      
+      <Box
+        sx={{
+          width:"355px",
           boxShadow: 0,
           //bgcolor: 'transparent',
-          backgroundImage: 'none',
-          alignItems: 'center',
+          backgroundImage: "none",
+          alignItems: "center",
           backgroundColor: '#f57c00',
-          borderBottom: '5px solid',
-         }}
+          // borderBottom: '5px solid',
+          padding:"9px 15px",
+          borderRadius: "20px",
+        }}
+      >
+        <Stack
+          direction="row"
+          sx={{
+            gap: 1,
+            width: { xs: "100%", sm: "auto" },
+          }}
         >
-          <Typography variant="h6" component="h6">From</Typography>
+          <Typography sx={{ fontSize: '16px', color:"white" }}>FROM:</Typography>
           <CustomDatePicker />
-          <Typography variant="h6" component="h6">To</Typography>
+          <Typography sx={{ fontSize: '16px', color:"white"  }}>TO:</Typography>
           <CustomDatePicker />
-        </Box>
-        
-      </Stack>
+        </Stack>
+      </Box>
     </Stack>
   );
 }

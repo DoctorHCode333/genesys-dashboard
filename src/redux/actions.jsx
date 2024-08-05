@@ -19,6 +19,27 @@ export function setEvalData(evalData){
     }
 }
 
+export function setCategories(categories){
+    return{
+        type:'SET_CATEGORIES',
+        categories,
+    }
+}
+
+export function setConversationUser(conversationUser) {
+  return {
+    type: 'SET_CONVERSATION_USERS',
+    conversationUser, // The full list of users
+  };
+}
+
+export function setConversationCategories(conversations) {
+  return {
+    type: 'SET_CONVERSATION_CATEGORIES',
+    conversations, // The full list of users
+  };
+}
+
 export function setFlag(flag){
     return{
         type:'SET_FLAG',

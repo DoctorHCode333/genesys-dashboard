@@ -33,12 +33,12 @@ export default function OptionsMenu() {
         <MenuItem sx={{ mt: 1 }}>
           <Avatar
             sizes="small"
-            alt="Riley Carter"
+            alt="Harshvardhan Bawake"
             src="/static/images/avatar/7.jpg"
             sx={{ width: 24, height: 24, mr: 1 }}
           />
           <Typography component="p" variant="subtitle2">
-            Riley Carter
+          Harshvardhan Bawake
           </Typography>
         </MenuItem>
         <Divider />

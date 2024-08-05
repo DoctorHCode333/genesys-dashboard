@@ -56,7 +56,17 @@ export async function authenticate() {
 // Get the list of available users.
 export const fetchUsersData = async () => {
     try {
-        const data = await userApi.getUsers()
+        let opts = { 
+               "pageSize": 500, // Number | Page size
+            //   "pageNumber": 1, // Number | Page number
+            //   "id": ["id_example"], // [String] | A list of user IDs to fetch by bulk
+            //   "jabberId": ["jabberId_example"], // [String] | A list of jabberIds to fetch by bulk (cannot be used with the id parameter)
+            //   "sortOrder": "ASC", // String | Ascending or descending sort order
+            //   "expand": ["expand_example"], // [String] | Which fields, if any, to expand
+            //   "integrationPresenceSource": "integrationPresenceSource_example", // String | Gets an integration presence for users instead of their defaults. This parameter will only be used when presence is provided as an expand. When using this parameter the maximum number of users that can be returned is 100.
+            //   "state": "active" // String | Only list users of this state
+             };
+        const data = await userApi.getUsers(opts)
         if (data && data.entities) {
             const rows = data.entities.map((user) => ({
                 id: user.id || 'N/A',
@@ -119,5 +129,72 @@ export const fetchEvalData = async () => {
 }
 
 
+export const fetchConversations = async (userId) => {
+    try {
+      const conversationsApi = new platformClient.ConversationsApi();
+      const qualityApi = new platformClient.QualityApi();
 
+      // Fetch all conversations for the given user
+      const conversationsResponse = await conversationsApi.getConversations({
+        participantId: userId,
+      });
 
+      const conversationsData = conversationsResponse.entities;
+
+      // Fetch categories for each conversation
+      const conversationsWithCategories = await Promise.all(
+        conversationsData.map(async (conversation) => {
+          const evaluations = await qualityApi.getQualityConversationEvaluation(
+            conversation.id
+          );
+          const categories = evaluations.entities.map(
+            (evaluation) => evaluation.name
+          );
+          return {
+            id: conversation.id,
+            participants: conversation.participants,
+            categories,
+          };
+        })
+      );
+      console.log(conversationsWithCategories);
+      
+      return conversationsWithCategories;
+    } catch (error) {
+      console.error('Error fetching conversations or categories:', error);
+      
+    }
+  };
+
+export const fetchCategories = async () => {
+    const opts = { /* Your options here */ };
+    const SpeechTextAnalyticsApi = new platformClient.SpeechTextAnalyticsApi();
+    try {
+      const data = await SpeechTextAnalyticsApi.getSpeechandtextanalyticsCategories(opts);
+      console.log(data.entities);
+      
+      if (data && data.entities) {
+        const rows = data.entities.map((category) => ({
+            id: category.id || 'N/A',
+            interactionType: category.interactionType,
+            name: category.name || 'N/A',
+        }));
+        const columns = [
+            { field: 'id', headerName: 'Category ID', width: 300 },
+            { field: 'name', headerName: 'Category Name', width: 300 },
+            { field: 'interactionType', headerName: 'Interaction Type', width: 100 },
+        ];
+
+        const transformedCategoriesData = {
+            rows,
+            columns,
+        }
+        return transformedCategoriesData;
+    } else {
+        return [];
+    }
+    } catch (err) {
+      console.log("There was a failure calling getSpeechandtextanalyticsCategories");
+      console.error(err);
+    }
+  };

@@ -9,6 +9,9 @@ function mapStateToProps(state){
         flag: state.setFlag,
         userData: state.filterUserData,
         evalData: state.setEvalData,
+        categories: state.setCategories,
+        conversationUser: state.setConversationUser,
+        conversations: state.setConversationCategories,
         query: state.setQuery,
 
     }

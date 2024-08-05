@@ -4,6 +4,7 @@ import Stack from "@mui/material/Stack";
 import ChartUserByCountry from "./ChartUserByCountry";
 import CustomizedTreeView from "./CustomizedTreeView";
 import CustomizedDataGrid from "./CustomizedDataGrid";
+import AddCategory from "./AddCatergory";
 import HighlightedCard from "./HighlightedCard";
 import PageViewsBarChart from "./PageViewsBarChart";
 import PageViewsChart from "./PageViewsChart";
@@ -12,7 +13,7 @@ import TextField from "@mui/material/TextField";
 import "../../../index.css";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import InputAdornment from "@mui/material/InputAdornment";
-import { Box } from '@mui/material';
+import { Box } from "@mui/material";
 
 const data = [
   {
@@ -39,7 +40,7 @@ const data = [
 ];
 
 export default function MainGrid(props) {
-  const { setQuery, query, userData, evalData } = props;
+  const { setQuery, query, userData, evalData,categories, setConversationUser } = props;
   const handleSearch = (e) => {
     setQuery(e.target.value);
   };
@@ -61,11 +62,9 @@ export default function MainGrid(props) {
         container
         spacing={2}
         direction={{ xs: "row-reverse", md: "row" }}
-        columns={12}
-      >
+        columns={12}>
         <Grid size={{ xs: 12, md: 8, lg: 9 }}>
           <Stack spacing={2}>
-            
             <Box sx={{ m: 4 }}>
               <Box sx={{ mt: 4 }}>
                 <TextField
@@ -94,7 +93,7 @@ export default function MainGrid(props) {
                     sx: {
                       fontSize: "1.8rem",
                       top: "-15px",
-                      left:"5px",
+                      left: "5px",
                     },
                   }}
                   sx={{
@@ -106,10 +105,59 @@ export default function MainGrid(props) {
               </Box>
             </Box>
             {/* Data Tables Here */}
+            
+            <Box>
+              <CustomizedDataGrid
+                rows={categories.rows}
+                columns={categories.columns}
+              />
+             
+              <AddCategory></AddCategory>
+            </Box>
+            <Box sx={{ m: 4 }}>
+              <Box sx={{ mt: 4 }}>
+                <TextField
+                  id="standard-basic"
+                  variant="standard"
+                  fullWidth
+                  label="Search Users"
+                  type="search"
+                  value={query}
+                  onChange={handleSearch}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment
+                        position="start"
+                        sx={{ color: "text.primary" }}
+                      >
+                        <SearchRoundedIcon fontSize="large" />
+                      </InputAdornment>
+                    ),
+                    sx: {
+                      fontSize: "1.25rem",
+                      height: "60px",
+                    },
+                  }}
+                  InputLabelProps={{
+                    sx: {
+                      fontSize: "1.8rem",
+                      top: "-15px",
+                      left: "5px",
+                    },
+                  }}
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      height: "40px",
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
             <CustomizedDataGrid
-              rows={userData.filteredUsers.rows}
-              columns={userData.filteredUsers.columns}
-            />
+                rows={userData.filteredUsers.rows}
+                columns={userData.filteredUsers.columns}
+                setConversationUser={setConversationUser}
+              />
             {/* <CustomizedDataGrid rows={evalData.rows} columns={evalData.columns}/> */}
             <PageViewsBarChart />
             <PageViewsChart />

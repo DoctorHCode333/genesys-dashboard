@@ -1,5 +1,5 @@
 import {combineReducers} from 'redux'
-import {initialUserData, evalData, flag, query} from '../data'
+import {initialUserData, evalData,conversationUser,categories, conversations, flag, query} from '../data'
 
 function filterUserData(state = initialUserData, action) {
     
@@ -31,6 +31,27 @@ function setEvalData(state = evalData, action){
     }
 }
 
+function setCategories(state = categories, action){
+  switch (action.type){
+      case 'SET_CATEGORIES': return action.categories;
+      default: return state
+  }
+}
+
+function setConversationUser(state = conversationUser, action){
+  switch (action.type){
+      case 'SET_CONVERSATION_USERS': return action.conversationUser;
+      default: return state
+  }
+}
+
+function setConversationCategories(state = conversations, action){
+  switch (action.type){
+      case 'SET_CONVERSATION_CATEGORIES': return action.conversations;
+      default: return state
+  }
+}
+
 function setFlag(state=flag,action){
     switch (action.type){
         case 'SET_FLAG': return action.flag;
@@ -45,5 +66,5 @@ function setQuery(state=query,action){
     }
 }
 
-const rootReducer = combineReducers({filterUserData, setEvalData, setFlag, setQuery})
+const rootReducer = combineReducers({filterUserData, setEvalData,setCategories, setConversationUser, setConversationCategories, setFlag, setQuery})
 export default rootReducer
