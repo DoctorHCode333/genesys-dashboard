@@ -1,8 +1,15 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
-const { format, parseISO, startOfWeek, endOfWeek, subDays } = require('date-fns');
+const oracledb = require('oracledb');
+const { format, parseISO, startOfWeek, endOfWeek } = require('date-fns');
 
 const app = express();
+
+// Set Oracle DB connection settings
+const dbConfig = {
+  user: 'GEN_INXNB',
+  password: 'genidb!_pr04_v0y4',
+  connectString: 'cti.apptoapp.org:1521/cti_Srvc.oracle.db',
+};
 
 app.get('/bot-feedback', async (req, res) => {
   const orgFormatter = 'yyyy-MM-dd';
@@ -35,53 +42,60 @@ app.get('/bot-feedback', async (req, res) => {
     const validFlobs = ['WS', 'EB', 'BF', 'HO', 'EBRC'];
     flob = validFlobs.includes(flob) ? flob : 'WS';
 
-    // Database connection
-    connection = await mysql.createConnection({
-      host: 'gsysp-new.apptoapp.org',
-      user: 'GEN_INXNB',
-      password: 'genidb!_pr04_v0y4',
-      database: 'gsysp_Srvc.oracle.db',
-    });
+    // Establish a connection to the Oracle database
+    connection = await oracledb.getConnection(dbConfig);
 
     let negativeFeedbackQuery = `
       SELECT TRUNC(startdate), COUNT(conversationid)
       FROM botfeedback
       WHERE comments != 'positive'
-      AND TRUNC(startdate) >= ?
-      AND TRUNC(startdate) <= ?
+      AND TRUNC(startdate) >= TO_DATE(:fromDate, 'DD-MON-YY')
+      AND TRUNC(startdate) <= TO_DATE(:toDate, 'DD-MON-YY')
     `;
 
     let positiveFeedbackQuery = `
       SELECT TRUNC(startdate), COUNT(conversationid)
       FROM botfeedback
       WHERE comments = 'positive'
-      AND TRUNC(startdate) >= ?
-      AND TRUNC(startdate) <= ?
+      AND TRUNC(startdate) >= TO_DATE(:fromDate, 'DD-MON-YY')
+      AND TRUNC(startdate) <= TO_DATE(:toDate, 'DD-MON-YY')
     `;
 
     if (flob !== 'all') {
-      negativeFeedbackQuery += ` AND LOB = '${flob}'`;
-      positiveFeedbackQuery += ` AND LOB = '${flob}'`;
+      negativeFeedbackQuery += ` AND LOB = :flob`;
+      positiveFeedbackQuery += ` AND LOB = :flob`;
     }
 
     negativeFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
     positiveFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
 
-    const [negativeFeedbackResults] = await connection.execute(negativeFeedbackQuery, [fromDate, toDate]);
-    const [positiveFeedbackResults] = await connection.execute(positiveFeedbackQuery, [fromDate, toDate]);
+    // Execute negative feedback query
+    const negativeFeedbackResults = await connection.execute(negativeFeedbackQuery, {
+      fromDate,
+      toDate,
+      flob,
+    });
+
+    const positiveFeedbackResults = await connection.execute(positiveFeedbackQuery, {
+      fromDate,
+      toDate,
+      flob,
+    });
 
     const negativeFeedback = {};
     const positiveFeedback = {};
 
-    negativeFeedbackResults.forEach(result => {
-      negativeFeedback[result[0].replace(' 00:00:00.0', '')] = result[1];
+    // Process negative feedback results
+    negativeFeedbackResults.rows.forEach(result => {
+      negativeFeedback[result[0].toISOString().split('T')[0]] = result[1];
     });
 
-    positiveFeedbackResults.forEach(result => {
-      positiveFeedback[result[0].replace(' 00:00:00.0', '')] = result[1];
+    // Process positive feedback results
+    positiveFeedbackResults.rows.forEach(result => {
+      positiveFeedback[result[0].toISOString().split('T')[0]] = result[1];
     });
 
-    // Make sure both datasets have the same keys
+    // Ensure both datasets have the same keys
     for (let date in negativeFeedback) {
       if (!positiveFeedback.hasOwnProperty(date)) {
         positiveFeedback[date] = 0;
@@ -102,12 +116,17 @@ app.get('/bot-feedback', async (req, res) => {
       positivedataset: sortedPositiveFeedback,
       FeedSuccess: 'True',
     });
+
   } catch (error) {
     console.error(error);
     if (connection) {
-      await connection.end();
+      await connection.close();
     }
     res.json({ FeedFail: 'True' });
+  } finally {
+    if (connection) {
+      await connection.close();
+    }
   }
 });
 
