@@ -257,6 +257,34 @@ app.post('/api/interactions', async (req, res) => {
   }
 });
 
+/////
+
+WITH ANI_CTE AS (
+  SELECT ANI, COUNT(*) AS ANI_COUNT
+  FROM CLOUD_STA_IXNS
+  WHERE ANI IS NOT NULL
+    AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+  GROUP BY ANI
+  HAVING COUNT(*) > 4 AND COUNT(*) < 21
+),
+PARTY_ID_CTE AS (
+  SELECT PARTY_ID, COUNT(*) AS PARTY_ID_COUNT
+  FROM CLOUD_STA_IXNS
+  WHERE PARTY_ID IS NOT NULL
+    AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+  GROUP BY PARTY_ID
+  HAVING COUNT(*) > 4 AND COUNT(*) < 21
+)
+SELECT 
+    a.ANI, 
+    a.ANI_COUNT, 
+    p.PARTY_ID, 
+    p.PARTY_ID_COUNT
+FROM ANI_CTE a
+FULL OUTER JOIN PARTY_ID_CTE p ON a.ANI = p.PARTY_ID
+ORDER BY a.ANI_COUNT DESC, p.PARTY_ID_COUNT DESC;
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
