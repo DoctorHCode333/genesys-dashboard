@@ -133,3 +133,131 @@ app.get('/bot-feedback', async (req, res) => {
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
 });
+////////////////////////
+
+
+
+// Importing required libraries
+const express = require('express');
+const oracledb = require('oracledb');
+const bodyParser = require('body-parser');
+
+// Initialize the app
+const app = express();
+const port = 3000;
+
+// Middleware to parse JSON bodies
+app.use(bodyParser.json());
+
+// Oracle DB connection config
+const dbConfig = {
+  user: 'your_username',       // Your Oracle DB username
+  password: 'your_password',   // Your Oracle DB password
+  connectString: 'ctip.apptoapp.org:1521/ctip_Srvc.oracle.db', // Your Oracle DB connection string
+};
+
+// Query interaction count for ANI
+const queryANI = async (startDate, endDate) => {
+  let connection;
+  try {
+    // Connect to Oracle DB
+    connection = await oracledb.getConnection(dbConfig);
+
+    // SQL Query for ANI
+    const query = `
+      SELECT ANI, COUNT(*) AS COUNT 
+      FROM CLOUD_STA_IXNS 
+      WHERE ANI IS NOT NULL 
+        AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+        AND TO_DATE(:endDate, 'YYYY-MM-DD') 
+      GROUP BY ANI 
+      ORDER BY COUNT DESC
+    `;
+
+    // Execute query
+    const result = await connection.execute(query, { startDate, endDate }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+};
+
+// Query interaction count for PARTY_ID
+const queryPartyID = async (startDate, endDate) => {
+  let connection;
+  try {
+    // Connect to Oracle DB
+    connection = await oracledb.getConnection(dbConfig);
+
+    // SQL Query for PARTY_ID
+    const query = `
+      SELECT PARTY_ID, COUNT(*) AS COUNT 
+      FROM CLOUD_STA_IXNS 
+      WHERE PARTY_ID IS NOT NULL 
+        AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+        AND TO_DATE(:endDate, 'YYYY-MM-DD') 
+      GROUP BY PARTY_ID 
+      ORDER BY COUNT DESC
+    `;
+
+    // Execute query
+    const result = await connection.execute(query, { startDate, endDate }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+    return result.rows;
+  } catch (err) {
+    console.error(err);
+    return [];
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+};
+
+// API endpoint to handle both ANI and PARTY_ID requests
+app.post('/api/interactions', async (req, res) => {
+  try {
+    const { startDate, endDate, type } = req.body;
+
+    // Validate input dates, and set default range (last 7 days)
+    const currentDate = new Date();
+    const defaultEndDate = currentDate.toISOString().split('T')[0]; // Current Date
+    const defaultStartDate = new Date(currentDate.setDate(currentDate.getDate() - 7)).toISOString().split('T')[0]; // 7 days ago
+    
+    const finalStartDate = startDate || defaultStartDate;
+    const finalEndDate = endDate || defaultEndDate;
+
+    // Determine which query to run based on the 'type' parameter
+    let data;
+    if (type === 'ANI') {
+      data = await queryANI(finalStartDate, finalEndDate);
+    } else if (type === 'PARTY_ID') {
+      data = await queryPartyID(finalStartDate, finalEndDate);
+    } else {
+      return res.status(400).json({ error: 'Invalid type. Choose "ANI" or "PARTY_ID"' });
+    }
+
+    // Send the result back to the frontend
+    res.status(200).json({ data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
