@@ -228,3 +228,59 @@ const CategoriesReporting = () => {
 };
 
 export default CategoriesReporting;
+
+
+
+//////////////////////////////////////////////////////////////////
+export const fetchDataActions = async () => {
+  try {
+    let opts = { 
+      "pageSize": 2, // Number | The total page size requested
+       "pageNumber": 1, // Number | The page number requested
+      // "nextPage": "nextPage_example", // String | next page token
+      // "previousPage": "previousPage_example", // String | Previous page token
+      // "sortBy": "sortBy_example", // String | Root level field name to sort on.
+      // "sortOrder": "asc", // String | Direction to sort 'sortBy' field.
+      // "category": "category_example", // String | Filter by category name.
+      // "name": "name_example", // String | Filter by partial or complete action name.
+      // "ids": "ids_example", // String | Filter by action Id. Can be a comma separated list to request multiple actions.  Limit of 50 Ids.
+      // "secure": "secure_example", // String | Filter based on 'secure' configuration option. True will only return actions marked as secure. False will return only non-secure actions. Do not use filter if you want all Actions.
+      // "includeAuthActions": "false" // String | Whether or not to include authentication actions in the response. These actions are not directly executable. Some integrations create them and will run them as needed to refresh authentication information for other actions.
+    };
+    const data = await IntegrationsApi.getIntegrationsActions(opts);
+    console.log("Data Actions",data);
+    
+    if (data && data.entities) {
+      const rows = data.entities.map(async (user) => ({
+        id:user.id||"N/A",
+        url:(
+          let opts = { 
+            "expand": "expand_example", // String | Indicates a field in the response which should be expanded.
+            "includeConfig": true // Boolean | Return config in response.
+          };
+          
+          // Retrieves a single Action matching id.
+          const resp = await IntegrationsApi.getIntegrationsAction(user.id, opts)
+          console.log(resp.config.request.requestUrlTemplate);
+          return resp.config.request.requestUrlTemplate;
+          
+        }
+      }))
+      const columns = [
+        { field: "id", headerName: "ID", width: 300 },
+        { field: "name", headerName: "Username", width: 300 },
+      ];
+
+      const transformedUserData = {
+        rows,
+        columns,
+      };
+      console.log(transformedUserData);
+      return transformedUserData;
+    } else {
+      return [];
+    }
+  } catch (err) {
+    console.log("There was a failure calling Integrations Api", err);
+  }
+};
