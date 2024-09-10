@@ -1,0 +1,230 @@
+import React, { useState } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  IconButton,
+  Grid,
+  Chip,
+  Tooltip,
+  Stack,
+} from "@mui/material";
+import { Delete as DeleteIcon } from "@mui/icons-material";
+import { motion } from "framer-motion";
+import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
+import { areaElementClasses } from "@mui/x-charts/LineChart";
+
+const mockCategories = ["Positive Feedback", "Negative Feedback"];
+
+const mockData = {
+  "Positive Feedback": {
+    value: "1.3K",
+    trend: "up",
+    color: "#00FF00",
+    data: [2030, 5550, 615, 870, 560, 100, 1200],
+  },
+  Interactions: {
+    value: "8K",
+    trend: "upo",
+    color: "#991350",
+    data: [200, 180, 170, 155, 140, 160, 150],
+  },
+  "Negative Feedback": {
+    value: 420,
+    trend: "down",
+    color: "#991350",
+    data: [42, 21, 20, 83, 19, 18, 20],
+  },
+};
+
+function AreaGradient({ color, id }) {
+  return (
+    <defs>
+      <linearGradient id={id} x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+        <stop offset="100%" stopColor={color} stopOpacity={0} />
+      </linearGradient>
+    </defs>
+  );
+}
+
+const CategoriesReporting = () => {
+  const [cards, setCards] = useState([
+    { category: "Interactions", isRemovable: false },
+    { category: "Positive Feedback", isRemovable: false },
+    { category: "Negative Feedback", isRemovable: false },
+  ]);
+
+  const trendValues = { upo: "-18%", up: "+35%", down: "-15%", neutral: "+5%" };
+
+  return (
+    <div style={{ marginTop: "10px" }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "20vh",
+          backgroundColor: "#004E70",
+          padding: "0px",
+          maxWidth: "60%",
+          margin: "0px auto 30px",
+        }}
+      >
+        <Grid container spacing={2} justifyContent="center">
+          {cards.map((card, index) => {
+            const trend = mockData[card.category].trend;
+
+            // Custom chart color based on trend
+            const chartColor =
+              trend === "up"
+                ? "#00FF00" // Green for positive trend
+                : trend === "down"
+                ? "#991350" // Custom color for negative trend
+                : "#999999"; // Default color for neutral
+
+            return (
+              <Grid
+                item
+                xs={7}
+                sm={5}
+                md={3}
+                key={index}
+                sx={{ maxWidth: 250 }}
+                gap={1}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Card variant="elevation" sx={{ height: "100%", pb: "0px" }}>
+                    <Box
+                      sx={{
+                        background:
+                          "linear-gradient(to right, #FF4B00, #FF8000)",
+                        padding: 1,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderTopLeftRadius: "2px",
+                        borderTopRightRadius: "2px",
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontSize: "1rem",
+                          color: "white",
+                          fontFamily: "Optima, sans-serif",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {card.category}
+                      </Typography>
+                      {card.isRemovable && (
+                        <IconButton
+                          onClick={() => setCards(cards.filter((_, i) => i !== index))}
+                          sx={{ color: "#002B5B" }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
+                    </Box>
+
+                    <CardContent
+                      sx={{
+                        backgroundColor: "white",
+                        padding: "0px !important",
+                      }}
+                    >
+                      <Stack
+                        direction="column"
+                        sx={{
+                          justifyContent: "space-between",
+                          gap: 1,
+                          padding: "0px",
+                        }}
+                      >
+                        <Stack
+                          sx={{
+                            justifyContent: "space-between",
+                            padding: "5px 5px 0px",
+                          }}
+                        >
+                          <Stack
+                            direction="row"
+                            sx={{
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Typography
+                              variant="h6"
+                              component="p"
+                              sx={{
+                                fontSize: ".9rem",
+                                color: mockData[card.category].color,
+                              }}
+                            >
+                              {mockData[card.category].value}
+                            </Typography>
+                            <Tooltip
+                              title={
+                                trendValues[trend] + " increase in last 7 days"
+                              }
+                            >
+                              <Chip
+                                size="small"
+                                color={
+                                  trend === "up"
+                                    ? "success"
+                                    : trend === "down"
+                                    ? "error"
+                                    : "default"
+                                }
+                                sx={{ fontSize: ".9rem" }}
+                                label={trendValues[trend]}
+                              />
+                            </Tooltip>
+                          </Stack>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "text.secondary", fontSize: ".9rem" }}
+                          >
+                            Last 7 Days
+                          </Typography>
+                        </Stack>
+                        <Box sx={{ width: "100%", height: 70, padding: "0px" }}>
+                          <SparkLineChart
+                            colors={[chartColor]} // Custom color for chart line
+                            data={mockData[card.category].data}
+                            area
+                            sx={{
+                              [`& .${areaElementClasses.root}`]: {
+                                fill: `url(#area-gradient-${card.category})`,
+                              },
+                            }}
+                          >
+                            <AreaGradient
+                              color={chartColor}
+                              id={`area-gradient-${card.category}`}
+                            />
+                          </SparkLineChart>
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Box>
+    </div>
+  );
+};
+
+export default CategoriesReporting;
