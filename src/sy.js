@@ -285,26 +285,34 @@ export const fetchDataActions = async () => {
   }
 };
 
-const XLSX = require("xlsx");
-const fs = require("fs");
-
-const exportToExcel = (data, filePath) => {
-  // 1. Convert the array of objects to a worksheet
-  const worksheet = XLSX.utils.json_to_sheet(data);
-
-  // 2. Create a new workbook and append the worksheet
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
-  // 3. Write the file to the file system
-  XLSX.writeFile(workbook, filePath);
-};
+import React from "react";
+import * as XLSX from "xlsx";
 
 const data = [
   { id: 1, name: "John Doe", age: 25 },
   { id: 2, name: "Jane Smith", age: 30 },
-  { id: 3, name: "Mark Johnson", age: 22 }
+  { id: 3, name: "Mark Johnson", age: 22 },
 ];
 
-// Example usage: save the file locally
-exportToExcel(data, "UserData.xlsx");
+const ExportExcel = () => {
+  const exportToExcel = () => {
+    // 1. Convert the array of objects to a worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+
+    // 2. Create a new workbook and append the worksheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+    // 3. Trigger download of the Excel file
+    XLSX.writeFile(workbook, "UserData.xlsx");
+  };
+
+  return (
+    <div>
+      <button onClick={exportToExcel}>Download Excel</button>
+    </div>
+  );
+};
+
+export default ExportExcel;
+
