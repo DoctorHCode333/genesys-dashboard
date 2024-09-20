@@ -1,24 +1,31 @@
 const express = require('express');
+const cors = require('cors');
 const oracledb = require('oracledb');
 const { format, parseISO, startOfWeek, endOfWeek } = require('date-fns');
 
 const app = express();
 
-// Set Oracle DB connection settings
+app.use(express.json());
+app.use(cors());
+
+const port = process.env.PORT || 8012
+//Set Oracle DB connection settings
 const dbConfig = {
-  user: 'GEN_INXNB',
-  password: 'genidb!_pr04_v0y4',
-  connectString: 'cti.apptoapp.org:1521/cti_Srvc.oracle.db',
+  user: 'GEN_IXNDB',
+  password: 'Knu54h#I4dmE6P9a',
+  connectString: 'ctip.apptoapp.org:1521/ctip_Srvc.oracle.db',
 };
 
-app.get('/bot-feedback', async (req, res) => {
+app.post('/bot-feedback', async (req, res) => {
   const orgFormatter = 'yyyy-MM-dd';
-  const targetFormatter = 'dd-MMM-yy';
-
-  let fromDate = req.query.fromdate;
-  let toDate = req.query.todate;
-  let flob = req.query.flob || 'WS';
-
+  const targetFormatter = 'yyyy-MM-dd';
+  console.log(req.body);
+  
+  let fromDate = req.body.startDate;
+  let toDate = req.body.endDate;
+  let flob = req.query.flob || 'all';
+  console.log("Date Range ", fromDate,toDate);
+  
   let firstLoad = false;
   let connection;
 
@@ -49,39 +56,39 @@ app.get('/bot-feedback', async (req, res) => {
       SELECT TRUNC(startdate), COUNT(conversationid)
       FROM botfeedback
       WHERE comments != 'positive'
-      AND TRUNC(startdate) >= TO_DATE(:fromDate, 'DD-MON-YY')
-      AND TRUNC(startdate) <= TO_DATE(:toDate, 'DD-MON-YY')
+      AND TRUNC(startdate) >= TO_DATE(:fromDate, 'YYYY-MM-DD')
+      AND TRUNC(startdate) <= TO_DATE(:toDate, 'YYYY-MM-DD')
     `;
 
     let positiveFeedbackQuery = `
       SELECT TRUNC(startdate), COUNT(conversationid)
       FROM botfeedback
       WHERE comments = 'positive'
-      AND TRUNC(startdate) >= TO_DATE(:fromDate, 'DD-MON-YY')
-      AND TRUNC(startdate) <= TO_DATE(:toDate, 'DD-MON-YY')
+      AND TRUNC(startdate) >= TO_DATE(:fromDate, 'YYYY-MM-DD')
+      AND TRUNC(startdate) <= TO_DATE(:toDate, 'YYYY-MM-DD')
     `;
 
-    if (flob !== 'all') {
-      negativeFeedbackQuery += ` AND LOB = :flob`;
-      positiveFeedbackQuery += ` AND LOB = :flob`;
-    }
+    // if (flob !== 'all') {
+    //   negativeFeedbackQuery += ` AND LOB = :flob`;
+    //   positiveFeedbackQuery += ` AND LOB = :flob`;
+    // }
 
     negativeFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
     positiveFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
-
+    console.log(positiveFeedbackQuery);
+    
     // Execute negative feedback query
     const negativeFeedbackResults = await connection.execute(negativeFeedbackQuery, {
       fromDate,
-      toDate,
-      flob,
+      toDate
     });
 
     const positiveFeedbackResults = await connection.execute(positiveFeedbackQuery, {
       fromDate,
-      toDate,
-      flob,
+      toDate
     });
-
+    console.log(positiveFeedbackResults);
+    
     const negativeFeedback = {};
     const positiveFeedback = {};
 
@@ -128,264 +135,69 @@ app.get('/bot-feedback', async (req, res) => {
       await connection.close();
     }
   }
-});
-
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});
-////////////////////////
-
-
-
-// Importing required libraries
-const express = require('express');
-const oracledb = require('oracledb');
-const bodyParser = require('body-parser');
-
-// Initialize the app
-const app = express();
-const port = 3000;
-
-// Middleware to parse JSON bodies
-app.use(bodyParser.json());
-
-// Oracle DB connection config
-const dbConfig = {
-  user: 'your_username',       // Your Oracle DB username
-  password: 'your_password',   // Your Oracle DB password
-  connectString: 'ctip.apptoapp.org:1521/ctip_Srvc.oracle.db', // Your Oracle DB connection string
-};
-
-// Query interaction count for ANI
-const queryANI = async (startDate, endDate) => {
-  let connection;
-  try {
-    // Connect to Oracle DB
-    connection = await oracledb.getConnection(dbConfig);
-
-    // SQL Query for ANI
-    const query = `
-      SELECT ANI, COUNT(*) AS COUNT 
-      FROM CLOUD_STA_IXNS 
-      WHERE ANI IS NOT NULL 
-        AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
-        AND TO_DATE(:endDate, 'YYYY-MM-DD') 
-      GROUP BY ANI 
-      ORDER BY COUNT DESC
-    `;
-
-    // Execute query
-    const result = await connection.execute(query, { startDate, endDate }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
-    return result.rows;
-  } catch (err) {
-    console.error(err);
-    return [];
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  }
-};
-
-// Query interaction count for PARTY_ID
-const queryPartyID = async (startDate, endDate) => {
-  let connection;
-  try {
-    // Connect to Oracle DB
-    connection = await oracledb.getConnection(dbConfig);
-
-    // SQL Query for PARTY_ID
-    const query = `
-      SELECT PARTY_ID, COUNT(*) AS COUNT 
-      FROM CLOUD_STA_IXNS 
-      WHERE PARTY_ID IS NOT NULL 
-        AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
-        AND TO_DATE(:endDate, 'YYYY-MM-DD') 
-      GROUP BY PARTY_ID 
-      ORDER BY COUNT DESC
-    `;
-
-    // Execute query
-    const result = await connection.execute(query, { startDate, endDate }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
-    return result.rows;
-  } catch (err) {
-    console.error(err);
-    return [];
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  }
-};
-
-// API endpoint to handle both ANI and PARTY_ID requests
-app.post('/api/interactions', async (req, res) => {
-  try {
-    const { startDate, endDate, type } = req.body;
-
-    // Validate input dates, and set default range (last 7 days)
-    const currentDate = new Date();
-    const defaultEndDate = currentDate.toISOString().split('T')[0]; // Current Date
-    const defaultStartDate = new Date(currentDate.setDate(currentDate.getDate() - 7)).toISOString().split('T')[0]; // 7 days ago
-    
-    const finalStartDate = startDate || defaultStartDate;
-    const finalEndDate = endDate || defaultEndDate;
-
-    // Determine which query to run based on the 'type' parameter
-    let data;
-    if (type === 'ANI') {
-      data = await queryANI(finalStartDate, finalEndDate);
-    } else if (type === 'PARTY_ID') {
-      data = await queryPartyID(finalStartDate, finalEndDate);
-    } else {
-      return res.status(400).json({ error: 'Invalid type. Choose "ANI" or "PARTY_ID"' });
-    }
-
-    // Send the result back to the frontend
-    res.status(200).json({ data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch data' });
-  }
-});
-
-/////
-
-WITH ANI_COUNTS AS (
-  SELECT ANI, COUNT(*) AS ANI_COUNT, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS RNUM
-  FROM CLOUD_STA_IXNS
-  WHERE ANI IS NOT NULL
-    AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
-  GROUP BY ANI
-  HAVING COUNT(*) > 4 AND COUNT(*) < 21
-),
-PARTY_ID_COUNTS AS (
-  SELECT PARTY_ID, COUNT(*) AS PARTY_ID_COUNT, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS RNUM
-  FROM CLOUD_STA_IXNS
-  WHERE PARTY_ID IS NOT NULL
-    AND STARTDATE BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
-  GROUP BY PARTY_ID
-  HAVING COUNT(*) > 4 AND COUNT(*) < 21
-)
-SELECT 
-    a.ANI, 
-    a.ANI_COUNT, 
-    p.PARTY_ID, 
-    p.PARTY_ID_COUNT
-FROM ANI_COUNTS a
-FULL OUTER JOIN PARTY_ID_COUNTS p ON a.RNUM = p.RNUM
-ORDER BY a.RNUM;
-
-
-
-
-// Start the server
+})
+app.get("/",(req,res)=>{
+  res.send("Hello World")
+})
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log( `Server is running on port ${port}`);
 });
+////////////////////////////////////////
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////
-import React, { useState } from "react";
+
+import React, { useState,useEffect} from "react";
+import { useSelector } from 'react-redux';
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  Button,
-  Stack,
   IconButton,
   Grid,
   Chip,
   Tooltip,
+  Stack,
 } from "@mui/material";
-import { Delete as DeleteIcon, Add as AddIcon } from "@mui/icons-material";
+import { Delete as DeleteIcon } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
-import { useTheme } from "@mui/material/styles";
-import { MultiSelect } from "primereact/multiselect";
-import "primereact/resources/themes/saga-blue/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
 import { areaElementClasses } from "@mui/x-charts/LineChart";
+import { getBotFeedback } from './API/TopicAPI';
 
 const mockCategories = ["Positive Feedback", "Negative Feedback"];
 
 const mockData = {
   "Positive Feedback": {
-    value: "1.3K",
+    value: "68K",
     trend: "up",
     color: "#00FF00",
-    data: [2030, 5550, 615, 870, 560, 100, 1200],
+    data: [2030, 615, 870, 560, 100, 1200, 3550],
   },
-  Interions: {
-    value: "3K",
-    trend: "up",
-    color: "#00FF00",
-    data: [2030, 5550, 615, 870, 560, 100, 1200],
-  }, // More fluctuations
   Interactions: {
-    value: "8K",
+    value: "80K",
     trend: "upo",
-    color: "#991350",
+    color: "#797979",
     data: [200, 180, 170, 155, 140, 160, 150],
-  }, // More irregular decline
-  "Correct Welcome": {
-    value: 80,
-    trend: "up",
-    color: "#00FF00",
-    data: [70, 75, 60, 85, 70, 182, 90],
-  }, // More ups and downs
-  "Correct Guidance": {
-    value: 40,
-    trend: "down",
-    color: "#991350",
-    data: [50, 52, 147, 42, 35, 40, 138],
-  }, // More variation with a general decline
-  "S/R": {
-    value: 200,
-    trend: "up",
-    color: "#00FF00",
-    data: [50, 165, 180, 10, 510, 205, 220],
-  }, // More dynamic upward trend
-  "US/UR": {
-    value: 90,
-    trend: "up",
-    color: "#00FF00",
-    data: [80, 75, 85, 190, 80, 92, 190],
-  }, // Irregular increases
-  "Script Adherence": {
-    value: 60,
-    trend: "up",
-    color: "#991350",
-    data: [50, 55, 60, 150, 65, 62, 70],
-  }, // Fluctuating increases
-  "Connectivity Issue": {
-    value: 20,
-    trend: "down",
-    color: "#991350",
-    data: [42, 21, 20, 83, 19, 18, 20],
-  }, // More noticeable fluctuations
+  },
   "Negative Feedback": {
-    value: 420,
-    trend: "down",
-    color: "#a73698",
-    data: [42, 21, 20, 83, 19, 18, 20],
-  }, // More noticeable fluctuations
-  "Complex Query": {
-    value: 20,
+    value: "12K",
     trend: "down",
     color: "#991350",
     data: [42, 21, 20, 83, 19, 18, 20],
-  }, // More noticeable fluctuations
+  },
+  "PFR": {
+    value: "85%",
+    trend: "pfr",
+    color: "#797979",
+    data: [50, 72, 147, 52, 35, 60, 100],
+  },
+  "NFR": {
+    value: "15%",
+    trend: "nfr",
+    color: "#797979",
+    data: [434, 252, 247, 342, 235, 240, 100],
+  }
 };
 
 function AreaGradient({ color, id }) {
@@ -400,38 +212,40 @@ function AreaGradient({ color, id }) {
 }
 
 const CategoriesReporting = () => {
-  const theme = useTheme();
+
+
+  const fetchedCurrentDate = useSelector(state => state.fetchCurrentDate);
+  
+  const fetchedDateRange = useSelector(state => state.dateRange)
+  console.log("Hi",fetchedDateRange);
   const [cards, setCards] = useState([
     { category: "Interactions", isRemovable: false },
     { category: "Positive Feedback", isRemovable: false },
     { category: "Negative Feedback", isRemovable: false },
-    ,
+    { category: "PFR", isRemovable: false },
+    { category: "NFR", isRemovable: false },
   ]);
-  const [selectedCategory, setSelectedCategory] = useState([]);
 
-  const handleAddCard = () => {
-    if (selectedCategory.length) {
-      setCards([
-        ...cards,
-        ...selectedCategory.map((category) => ({
-          category,
-          isRemovable: true,
-        })),
-      ]);
-      setSelectedCategory([]); // Clear selection after adding
+  const trendValues = { upo: "-18%", up: "+35%", down: "-15%", neutral: "+5%" ,pfr:"+7%", nfr:"-4%"};
+
+  useEffect(()=>{
+   
+    const fetchData = async()=>{
+      try{
+        console.log("Hi",fetchedDateRange.startDate);
+        const response =await getBotFeedback({
+          startDate: fetchedDateRange.startDate,
+          endDate: fetchedDateRange.endDate,
+        });
+        console.log(response);
+        
+      }catch(e){
+        console.log("There was an error while getting Feedback Data",e);
+        
+      }
     }
-  };
-
-  const handleDeleteCard = (index) => {
-    setCards(cards.filter((_, i) => i !== index));
-  };
-
-  const availableCategories = mockCategories.filter(
-    (category) => !cards.map((card) => card.category).includes(category)
-  );
-
-  const trendValues = { upo: "-18%", up: "+35%", down: "-15%", neutral: "+5%" };
-
+    fetchData();
+  })
   return (
     <div style={{ marginTop: "10px" }}>
       <Box
@@ -447,28 +261,28 @@ const CategoriesReporting = () => {
           margin: "0px auto 30px",
         }}
       >
-        <Grid container spacing={2} justifyContent="center">
+        <Grid container spacing={2} justifyContent="center" sx={{minWidth:"900px"}}>
           {cards.map((card, index) => {
             const trend = mockData[card.category].trend;
-            const color =
-              trend === "up"
-                ? "success"
-                : trend === "down"
-                ? "error"
-                : "default";
+
+            // Custom chart color based on trend
             const chartColor =
               trend === "up"
-                ? theme.palette.success.main
-                : theme.palette.error.main;
+                ? "#00FF00" // Green for positive trend
+                : trend === "down"
+                ? "#991350" // Custom color for negative trend
+                : "#999999"; // Default color for neutral
 
             return (
               <Grid
                 item
-                xs={7}
-                sm={5}
-                md={3}
+                xs={2}
+                sm={2}
+                md={2.4}
+                lg={2.4}
+                xl={2.4}
                 key={index}
-                sx={{ maxWidth: 250 }}
+                //sx={{ minWidth: '120px' }}
                 gap={1}
               >
                 <motion.div
@@ -502,7 +316,7 @@ const CategoriesReporting = () => {
                       </Typography>
                       {card.isRemovable && (
                         <IconButton
-                          onClick={() => handleDeleteCard(index)}
+                          onClick={() => setCards(cards.filter((_, i) => i !== index))}
                           sx={{ color: "#002B5B" }}
                         >
                           <DeleteIcon />
@@ -554,7 +368,13 @@ const CategoriesReporting = () => {
                             >
                               <Chip
                                 size="small"
-                                color={color}
+                                color={
+                                  trend === "up"
+                                    ? "success"
+                                    : trend === "down"
+                                    ? "error"
+                                    : "default"
+                                }
                                 sx={{ fontSize: ".9rem" }}
                                 label={trendValues[trend]}
                               />
@@ -569,7 +389,7 @@ const CategoriesReporting = () => {
                         </Stack>
                         <Box sx={{ width: "100%", height: 70, padding: "0px" }}>
                           <SparkLineChart
-                            colors={[chartColor]}
+                            colors={[chartColor]} // Custom color for chart line
                             data={mockData[card.category].data}
                             area
                             sx={{
@@ -598,3 +418,4 @@ const CategoriesReporting = () => {
 };
 
 export default CategoriesReporting;
+
