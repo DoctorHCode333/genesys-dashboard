@@ -16,6 +16,71 @@ const dbConfig = {
   connectString: 'ctip.apptoapp.org:1521/ctip_Srvc.oracle.db',
 };
 
+app.post('/bot-feedback-trend', async (req, res) => {
+  const targetFormatter = 'yyyy-MM-dd';
+  let fromDate = req.body.startDate;
+  let toDate = req.body.endDate;
+  let flob = req.query.flob || 'all';
+  let connection;
+
+  try {
+    // Format and validate input dates
+    fromDate = format(parseISO(fromDate), targetFormatter);
+    toDate = format(parseISO(toDate), targetFormatter);
+    const previousFromDate = format(subDays(parseISO(fromDate), 7), targetFormatter);
+    const previousToDate = format(subDays(parseISO(fromDate), 1), targetFormatter);
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    // Fetch total data for current and previous periods
+    const fetchTotalsQuery = `
+      SELECT COUNT(conversationid) AS interactions,
+             SUM(CASE WHEN comments = 'positive' THEN 1 ELSE 0 END) AS positive,
+             SUM(CASE WHEN comments = 'negative' THEN 1 ELSE 0 END) AS negative
+      FROM botfeedback
+      WHERE TRUNC(startdate) BETWEEN TO_DATE(:fromDate, 'YYYY-MM-DD') AND TO_DATE(:toDate, 'YYYY-MM-DD')
+    `;
+
+    const currentTotals = await connection.execute(fetchTotalsQuery, { fromDate, toDate });
+    const previousTotals = await connection.execute(fetchTotalsQuery, { fromDate: previousFromDate, toDate: previousToDate });
+
+    const processTotals = (data) => ({
+      interactions: data.rows[0][0],
+      positive: data.rows[0][1],
+      negative: data.rows[0][2],
+    });
+
+    const calcPercentageChange = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    const current = processTotals(currentTotals);
+    const previous = processTotals(previousTotals);
+
+    // Calculate percentage changes
+    const percentChanges = {
+      interactions: calcPercentageChange(current.interactions, previous.interactions),
+      positive: calcPercentageChange(current.positive, previous.positive),
+      negative: calcPercentageChange(current.negative, previous.negative),
+    };
+
+    res.json({
+      currentPeriod: current,
+      percentChanges,
+      FeedSuccess: 'True',
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.json({ FeedFail: 'True' });
+  } finally {
+    if (connection) {
+      await connection.close();
+    }
+  }
+});
+
 app.post('/bot-feedback', async (req, res) => {
   const orgFormatter = 'yyyy-MM-dd';
   const targetFormatter = 'yyyy-MM-dd';
@@ -145,8 +210,7 @@ app.listen(port, () => {
 ////////////////////////////////////////
 
 
-
-import React, { useState,useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from 'react-redux';
 import {
   Box,
@@ -163,42 +227,7 @@ import { Delete as DeleteIcon } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 import { areaElementClasses } from "@mui/x-charts/LineChart";
-import { getBotFeedback } from './API/TopicAPI';
-
-const mockCategories = ["Positive Feedback", "Negative Feedback"];
-
-const mockData = {
-  "Positive Feedback": {
-    value: "68K",
-    trend: "up",
-    color: "#00FF00",
-    data: [2030, 615, 870, 560, 100, 1200, 3550],
-  },
-  Interactions: {
-    value: "80K",
-    trend: "upo",
-    color: "#797979",
-    data: [200, 180, 170, 155, 140, 160, 150],
-  },
-  "Negative Feedback": {
-    value: "12K",
-    trend: "down",
-    color: "#991350",
-    data: [42, 21, 20, 83, 19, 18, 20],
-  },
-  "PFR": {
-    value: "85%",
-    trend: "pfr",
-    color: "#797979",
-    data: [50, 72, 147, 52, 35, 60, 100],
-  },
-  "NFR": {
-    value: "15%",
-    trend: "nfr",
-    color: "#797979",
-    data: [434, 252, 247, 342, 235, 240, 100],
-  }
-};
+import { getBotFeedback, getBotFeedbackTrend } from './API/TopicAPI';
 
 function AreaGradient({ color, id }) {
   return (
@@ -212,40 +241,73 @@ function AreaGradient({ color, id }) {
 }
 
 const CategoriesReporting = () => {
+  const fetchedDateRange = useSelector(state => state.dateRange);
 
-
-  const fetchedCurrentDate = useSelector(state => state.fetchCurrentDate);
-  
-  const fetchedDateRange = useSelector(state => state.dateRange)
-  console.log("Hi",fetchedDateRange);
   const [cards, setCards] = useState([
     { category: "Interactions", isRemovable: false },
     { category: "Positive Feedback", isRemovable: false },
     { category: "Negative Feedback", isRemovable: false },
-    { category: "PFR", isRemovable: false },
-    { category: "NFR", isRemovable: false },
   ]);
 
-  const trendValues = { upo: "-18%", up: "+35%", down: "-15%", neutral: "+5%" ,pfr:"+7%", nfr:"-4%"};
+  const [trendData, setTrendData] = useState(null);
+  const [granularData, setGranularData] = useState(null);
 
-  useEffect(()=>{
-   
-    const fetchData = async()=>{
-      try{
-        console.log("Hi",fetchedDateRange.startDate);
-        const response =await getBotFeedback({
+  useEffect(() => {
+    // Fetch trend data
+    const fetchTrendData = async () => {
+      try {
+        const response = await getBotFeedbackTrend({
           startDate: fetchedDateRange.startDate,
           endDate: fetchedDateRange.endDate,
         });
-        console.log(response);
-        
-      }catch(e){
-        console.log("There was an error while getting Feedback Data",e);
-        
+        setTrendData(response);
+      } catch (e) {
+        console.error("Error fetching trend data", e);
       }
+    };
+
+    // Fetch granular data for Sparkline
+    const fetchGranularData = async () => {
+      try {
+        const response = await getBotFeedback({
+          startDate: fetchedDateRange.startDate,
+          endDate: fetchedDateRange.endDate,
+        });
+        setGranularData(response);
+      } catch (e) {
+        console.error("Error fetching granular data", e);
+      }
+    };
+
+    fetchTrendData();
+    fetchGranularData();
+  }, [fetchedDateRange]);
+
+  if (!trendData || !granularData) {
+    return <div>Loading...</div>;
+  }
+
+  const { currentPeriod, percentChanges } = trendData;
+  const { dailyData } = granularData;
+
+  const cardData = {
+    "Interactions": {
+      value: currentPeriod.interactions,
+      trend: percentChanges.interactions,
+      data: dailyData.Interactions,
+    },
+    "Positive Feedback": {
+      value: currentPeriod.positive,
+      trend: percentChanges.positive,
+      data: dailyData["Positive Feedback"],
+    },
+    "Negative Feedback": {
+      value: currentPeriod.negative,
+      trend: percentChanges.negative,
+      data: dailyData["Negative Feedback"],
     }
-    fetchData();
-  })
+  };
+
   return (
     <div style={{ marginTop: "10px" }}>
       <Box
@@ -261,30 +323,13 @@ const CategoriesReporting = () => {
           margin: "0px auto 30px",
         }}
       >
-        <Grid container spacing={2} justifyContent="center" sx={{minWidth:"900px"}}>
+        <Grid container spacing={2} justifyContent="center" sx={{ minWidth: "900px" }}>
           {cards.map((card, index) => {
-            const trend = mockData[card.category].trend;
-
-            // Custom chart color based on trend
-            const chartColor =
-              trend === "up"
-                ? "#00FF00" // Green for positive trend
-                : trend === "down"
-                ? "#991350" // Custom color for negative trend
-                : "#999999"; // Default color for neutral
+            const trend = cardData[card.category].trend > 0 ? "up" : "down";
+            const chartColor = trend === "up" ? "#00FF00" : "#991350"; // Green for positive, Purple for negative
 
             return (
-              <Grid
-                item
-                xs={2}
-                sm={2}
-                md={2.4}
-                lg={2.4}
-                xl={2.4}
-                key={index}
-                //sx={{ minWidth: '120px' }}
-                gap={1}
-              >
+              <Grid item xs={2} sm={2} md={2.4} lg={2.4} xl={2.4} key={index}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -293,8 +338,7 @@ const CategoriesReporting = () => {
                   <Card variant="elevation" sx={{ height: "100%", pb: "0px" }}>
                     <Box
                       sx={{
-                        background:
-                          "linear-gradient(to right, #FF4B00, #FF8000)",
+                        background: "linear-gradient(to right, #FF4B00, #FF8000)",
                         padding: 1,
                         display: "flex",
                         justifyContent: "space-between",
@@ -315,10 +359,7 @@ const CategoriesReporting = () => {
                         {card.category}
                       </Typography>
                       {card.isRemovable && (
-                        <IconButton
-                          onClick={() => setCards(cards.filter((_, i) => i !== index))}
-                          sx={{ color: "#002B5B" }}
-                        >
+                        <IconButton onClick={() => setCards(cards.filter((_, i) => i !== index))} sx={{ color: "#002B5B" }}>
                           <DeleteIcon />
                         </IconButton>
                       )}
@@ -330,67 +371,38 @@ const CategoriesReporting = () => {
                         padding: "0px !important",
                       }}
                     >
-                      <Stack
-                        direction="column"
-                        sx={{
-                          justifyContent: "space-between",
-                          gap: 1,
-                          padding: "0px",
-                        }}
-                      >
-                        <Stack
-                          sx={{
-                            justifyContent: "space-between",
-                            padding: "5px 5px 0px",
-                          }}
-                        >
-                          <Stack
-                            direction="row"
-                            sx={{
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
+                      <Stack direction="column" sx={{ justifyContent: "space-between", gap: 1, padding: "0px" }}>
+                        <Stack sx={{ justifyContent: "space-between", padding: "5px 5px 0px" }}>
+                          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
                             <Typography
                               variant="h6"
                               component="p"
                               sx={{
                                 fontSize: ".9rem",
-                                color: mockData[card.category].color,
+                                color: trend === "up" ? "#00FF00" : "#991350", // Green for up, Purple for down
                               }}
                             >
-                              {mockData[card.category].value}
+                              {cardData[card.category].value}
                             </Typography>
-                            <Tooltip
-                              title={
-                                trendValues[trend] + " increase in last 7 days"
-                              }
-                            >
+                            <Tooltip title={`There was a ${Math.abs(cardData[card.category].trend).toFixed(2)}% ${trend === "up" ? "increase" : "decrease"} in the last 7 days`}>
                               <Chip
                                 size="small"
-                                color={
-                                  trend === "up"
-                                    ? "success"
-                                    : trend === "down"
-                                    ? "error"
-                                    : "default"
-                                }
+                                color={trend === "up" ? "success" : "error"}
                                 sx={{ fontSize: ".9rem" }}
-                                label={trendValues[trend]}
+                                label={`${trend === "up" ? "+" : ""}${cardData[card.category].trend.toFixed(2)}%`}
                               />
                             </Tooltip>
                           </Stack>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "text.secondary", fontSize: ".9rem" }}
-                          >
+                          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: ".9rem" }}>
                             Last 7 Days
                           </Typography>
                         </Stack>
+                        
+                        {/* Sparkline chart */}
                         <Box sx={{ width: "100%", height: 70, padding: "0px" }}>
                           <SparkLineChart
                             colors={[chartColor]} // Custom color for chart line
-                            data={mockData[card.category].data}
+                            data={cardData[card.category].data}
                             area
                             sx={{
                               [`& .${areaElementClasses.root}`]: {
@@ -418,4 +430,5 @@ const CategoriesReporting = () => {
 };
 
 export default CategoriesReporting;
+
 
