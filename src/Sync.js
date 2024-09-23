@@ -84,7 +84,6 @@ app.post('/bot-feedback-trend', async (req, res) => {
 app.post('/bot-feedback', async (req, res) => {
   const orgFormatter = 'yyyy-MM-dd';
   const targetFormatter = 'yyyy-MM-dd';
-  console.log(req.body);
   
   let fromDate = req.body.startDate;
   let toDate = req.body.endDate;
@@ -117,6 +116,13 @@ app.post('/bot-feedback', async (req, res) => {
     // Establish a connection to the Oracle database
     connection = await oracledb.getConnection(dbConfig);
 
+    let interactionsQuery = `
+    SELECT TRUNC(startdate), COUNT(conversationid)
+    FROM botfeedback
+    AND TRUNC(startdate) >= TO_DATE(:fromDate, 'YYYY-MM-DD')
+    AND TRUNC(startdate) <= TO_DATE(:toDate, 'YYYY-MM-DD')
+  `;
+
     let negativeFeedbackQuery = `
       SELECT TRUNC(startdate), COUNT(conversationid)
       FROM botfeedback
@@ -138,11 +144,16 @@ app.post('/bot-feedback', async (req, res) => {
     //   positiveFeedbackQuery += ` AND LOB = :flob`;
     // }
 
+    interactionsQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
     negativeFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
     positiveFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
-    console.log(positiveFeedbackQuery);
     
     // Execute negative feedback query
+    const interactionsResults = await connection.execute(interactionsQuery, {
+      fromDate,
+      toDate
+    });
+
     const negativeFeedbackResults = await connection.execute(negativeFeedbackQuery, {
       fromDate,
       toDate
@@ -152,6 +163,7 @@ app.post('/bot-feedback', async (req, res) => {
       fromDate,
       toDate
     });
+    
     console.log(positiveFeedbackResults);
     
     const negativeFeedback = {};
@@ -184,6 +196,7 @@ app.post('/bot-feedback', async (req, res) => {
     const sortedPositiveFeedback = Object.fromEntries(Object.entries(positiveFeedback).sort());
 
     res.json({
+      interactions: interactions,
       negativedataset: sortedNegativeFeedback,
       positivedataset: sortedPositiveFeedback,
       FeedSuccess: 'True',
@@ -201,6 +214,8 @@ app.post('/bot-feedback', async (req, res) => {
     }
   }
 })
+
+
 app.get("/",(req,res)=>{
   res.send("Hello World")
 })
