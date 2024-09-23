@@ -242,9 +242,10 @@ app.listen(port, () => {
 
 ////////////////////////////////////////
 
-
 import React, { useState, useEffect } from "react";
-import { useSelector } from 'react-redux';
+import { connect, useDispatch, useSelector } from "react-redux";
+import { setTrendData, setDailyData} from "./Redux/actions";
+
 import {
   Box,
   Card,
@@ -274,72 +275,85 @@ function AreaGradient({ color, id }) {
 }
 
 const CategoriesReporting = () => {
+  const dispatch = useDispatch();
   const fetchedDateRange = useSelector(state => state.dateRange);
-
+  const trendData = useSelector(state => state.fetchTrendData);
+  const dailyData = useSelector(state => state.fetchDailyData);
+  console.log("trend Data",trendData);
+  console.log("Daily Data",dailyData);
   const [cards, setCards] = useState([
     { category: "Interactions", isRemovable: false },
     { category: "Positive Feedback", isRemovable: false },
     { category: "Negative Feedback", isRemovable: false },
   ]);
-
-  const [trendData, setTrendData] = useState(null);
-  const [granularData, setGranularData] = useState(null);
+  const [cardData, setCardData] = useState({})
 
   useEffect(() => {
     // Fetch trend data
-    const fetchTrendData = async () => {
+    const getTrendData = async () => {
+     
       try {
         const response = await getBotFeedbackTrend({
           startDate: fetchedDateRange.startDate,
           endDate: fetchedDateRange.endDate,
         });
-        setTrendData(response);
+        console.log(response);
+        
+        dispatch(setTrendData(response));
       } catch (e) {
         console.error("Error fetching trend data", e);
       }
     };
 
     // Fetch granular data for Sparkline
-    const fetchGranularData = async () => {
+    const getGranularData = async () => {
       try {
         const response = await getBotFeedback({
           startDate: fetchedDateRange.startDate,
           endDate: fetchedDateRange.endDate,
         });
-        setGranularData(response);
+        console.log(response);
+        dispatch(setDailyData(response));
       } catch (e) {
         console.error("Error fetching granular data", e);
       }
     };
 
-    fetchTrendData();
-    fetchGranularData();
+    getTrendData();
+    getGranularData();
   }, [fetchedDateRange]);
 
-  if (!trendData || !granularData) {
+  if (!trendData || !dailyData) {
     return <div>Loading...</div>;
   }
 
+  console.log("trend Data",trendData);
+  console.log("Daily Data",dailyData);
+  
   const { currentPeriod, percentChanges } = trendData;
-  const { dailyData } = granularData;
-
-  const cardData = {
-    "Interactions": {
-      value: currentPeriod.interactions,
-      trend: percentChanges.interactions,
-      data: dailyData.Interactions,
-    },
-    "Positive Feedback": {
-      value: currentPeriod.positive,
-      trend: percentChanges.positive,
-      data: dailyData["Positive Feedback"],
-    },
-    "Negative Feedback": {
-      value: currentPeriod.negative,
-      trend: percentChanges.negative,
-      data: dailyData["Negative Feedback"],
-    }
-  };
+  
+  useEffect(() => {
+    setCardData({
+      "Interactions": {
+        value: currentPeriod.interactions,
+        trend: percentChanges.interactions,
+        data: dailyData.interactions,
+      },
+      "Positive Feedback": {
+        value: currentPeriod.positive,
+        trend: percentChanges.positive,
+        data: dailyData.positivedataset,
+      },
+      "Negative Feedback": {
+        value: currentPeriod.negative,
+        trend: percentChanges.negative,
+        data: dailyData.negativedataset,
+      }
+    });
+    console.log(cardData);
+    
+  },[trendData,dailyData])
+ 
 
   return (
     <div style={{ marginTop: "10px" }}>
@@ -463,5 +477,6 @@ const CategoriesReporting = () => {
 };
 
 export default CategoriesReporting;
+
 
 
