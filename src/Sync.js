@@ -88,7 +88,7 @@ app.post('/bot-feedback', async (req, res) => {
   let fromDate = req.body.startDate;
   let toDate = req.body.endDate;
   let flob = req.query.flob || 'all';
-  console.log("Date Range ", fromDate,toDate);
+  console.log("Date Range ", fromDate, toDate);
   
   let firstLoad = false;
   let connection;
@@ -117,11 +117,11 @@ app.post('/bot-feedback', async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     let interactionsQuery = `
-    SELECT TRUNC(startdate), COUNT(conversationid)
-    FROM botfeedback
-    AND TRUNC(startdate) >= TO_DATE(:fromDate, 'YYYY-MM-DD')
-    AND TRUNC(startdate) <= TO_DATE(:toDate, 'YYYY-MM-DD')
-  `;
+      SELECT TRUNC(startdate), COUNT(conversationid)
+      FROM botfeedback
+      WHERE TRUNC(startdate) >= TO_DATE(:fromDate, 'YYYY-MM-DD')
+      AND TRUNC(startdate) <= TO_DATE(:toDate, 'YYYY-MM-DD')
+    `;
 
     let negativeFeedbackQuery = `
       SELECT TRUNC(startdate), COUNT(conversationid)
@@ -139,16 +139,12 @@ app.post('/bot-feedback', async (req, res) => {
       AND TRUNC(startdate) <= TO_DATE(:toDate, 'YYYY-MM-DD')
     `;
 
-    // if (flob !== 'all') {
-    //   negativeFeedbackQuery += ` AND LOB = :flob`;
-    //   positiveFeedbackQuery += ` AND LOB = :flob`;
-    // }
-
+    // Group by date to get daily counts
     interactionsQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
     negativeFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
     positiveFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
     
-    // Execute negative feedback query
+    // Execute the queries
     const interactionsResults = await connection.execute(interactionsQuery, {
       fromDate,
       toDate
@@ -164,39 +160,39 @@ app.post('/bot-feedback', async (req, res) => {
       toDate
     });
     
-    console.log(positiveFeedbackResults);
-    
-    const negativeFeedback = {};
-    const positiveFeedback = {};
+    // Process interaction results
+    const interactions = {};
+    interactionsResults.rows.forEach(result => {
+      interactions[result[0].toISOString().split('T')[0]] = result[1];
+    });
 
     // Process negative feedback results
+    const negativeFeedback = {};
     negativeFeedbackResults.rows.forEach(result => {
       negativeFeedback[result[0].toISOString().split('T')[0]] = result[1];
     });
 
     // Process positive feedback results
+    const positiveFeedback = {};
     positiveFeedbackResults.rows.forEach(result => {
       positiveFeedback[result[0].toISOString().split('T')[0]] = result[1];
     });
 
     // Ensure both datasets have the same keys
-    for (let date in negativeFeedback) {
-      if (!positiveFeedback.hasOwnProperty(date)) {
-        positiveFeedback[date] = 0;
-      }
-    }
+    const allDates = new Set([...Object.keys(negativeFeedback), ...Object.keys(positiveFeedback), ...Object.keys(interactions)]);
 
-    for (let date in positiveFeedback) {
-      if (!negativeFeedback.hasOwnProperty(date)) {
-        negativeFeedback[date] = 0;
-      }
-    }
+    allDates.forEach(date => {
+      if (!negativeFeedback[date]) negativeFeedback[date] = 0;
+      if (!positiveFeedback[date]) positiveFeedback[date] = 0;
+      if (!interactions[date]) interactions[date] = 0;
+    });
 
+    const sortedInteractions = Object.fromEntries(Object.entries(interactions).sort());
     const sortedNegativeFeedback = Object.fromEntries(Object.entries(negativeFeedback).sort());
     const sortedPositiveFeedback = Object.fromEntries(Object.entries(positiveFeedback).sort());
 
     res.json({
-      interactions: interactions,
+      interactions: sortedInteractions, // Include the sorted interactions count
       negativedataset: sortedNegativeFeedback,
       positivedataset: sortedPositiveFeedback,
       FeedSuccess: 'True',
@@ -213,7 +209,7 @@ app.post('/bot-feedback', async (req, res) => {
       await connection.close();
     }
   }
-})
+});
 
 
 app.get("/",(req,res)=>{
