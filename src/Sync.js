@@ -100,21 +100,22 @@ app.post('/bot-feedback', async (req, res) => {
       fromDate,
       toDate
     });
+
     
-    // Process interaction results
-    const interactions = {};
+    // Process interaction resultsdsd
+    const interactions = [];
     interactionsResults.rows.forEach(result => {
       interactions[result[0].toISOString().split('T')[0]] = result[1];
     });
 
-    // Process negative feedback results
-    const negativeFeedback = {};
+    // Process negative feedback resultsdd
+    const negativeFeedback = [];
     negativeFeedbackResults.rows.forEach(result => {
       negativeFeedback[result[0].toISOString().split('T')[0]] = result[1];
     });
 
     // Process positive feedback results
-    const positiveFeedback = {};
+    const positiveFeedback = [];
     positiveFeedbackResults.rows.forEach(result => {
       positiveFeedback[result[0].toISOString().split('T')[0]] = result[1];
     });
@@ -127,17 +128,51 @@ app.post('/bot-feedback', async (req, res) => {
       if (!positiveFeedback[date]) positiveFeedback[date] = 0;
       if (!interactions[date]) interactions[date] = 0;
     });
-
+    //console.log("fgfg",interactions);
+    
     const sortedInteractions = Object.fromEntries(Object.entries(interactions).sort());
     const sortedNegativeFeedback = Object.fromEntries(Object.entries(negativeFeedback).sort());
     const sortedPositiveFeedback = Object.fromEntries(Object.entries(positiveFeedback).sort());
 
-    res.json({
-      interactions: sortedInteractions, // Include the sorted interactions count
-      negativedataset: sortedNegativeFeedback,
+    const responsePayload = {
+      interactions: interactions, // Include the sorted interactions count
+      negativedataset: negativeFeedback,
       positivedataset: sortedPositiveFeedback,
       FeedSuccess: 'True',
-    });
+    };
+    console.log(responsePayload);
+    //gives correct result
+    // {
+    //   interactions: [
+    //     '2024-09-17': 330,
+    //     '2024-09-18': 270,
+    //     '2024-09-19': 265,
+    //     '2024-09-20': 266,
+    //     '2024-09-21': 100,
+    //     '2024-09-22': 91,
+    //     '2024-09-23': 16
+    //   ],
+    //   negativedataset: [
+    //     '2024-09-17': 108,
+    //     '2024-09-18': 97,
+    //     '2024-09-19': 95,
+    //     '2024-09-20': 89,
+    //     '2024-09-21': 35,
+    //     '2024-09-22': 26,
+    //     '2024-09-23': 3
+    //   ],
+    //   positivedataset: {
+    //     '2024-09-17': 222,
+    //     '2024-09-18': 173,
+    //     '2024-09-19': 170,
+    //     '2024-09-20': 177,
+    //     '2024-09-21': 65,
+    //     '2024-09-22': 65,
+    //     '2024-09-23': 13
+    //   },
+    //   FeedSuccess: 'True'
+    // }
+    res.json(responsePayload);
 
   } catch (error) {
     console.error(error);
