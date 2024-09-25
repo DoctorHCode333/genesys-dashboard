@@ -187,7 +187,6 @@ app.post('/bot-feedback', async (req, res) => {
   }
 });
 
-
 app.post("/bot-feedback-trend", async (req, res) => {
   const targetFormatter = "yyyy-MM-dd";
   let fromDate = req.body.startDate;
@@ -200,20 +199,24 @@ app.post("/bot-feedback-trend", async (req, res) => {
     // Format and validate input date
     fromDate = format(parseISO(fromDate), targetFormatter);
     toDate = format(parseISO(toDate), targetFormatter);
+
+    const period = differenceInDays(toDate,fromDate)+1;
+    console.log(period);
+    
     const previousFromDate = format(
-      subDays(parseISO(fromDate), 7),
+      subDays(parseISO(fromDate), period),
       targetFormatter
     );
     const previousToDate = format(
       subDays(parseISO(fromDate), 1),
       targetFormatter
     );
-
+    console.log(previousFromDate, " ",previousToDate);
+    
     connection = await oracledb.getConnection(dbConfig);
-    console.log("Inside bot-feedback-trend");
     // Fetch total data for current and previous periods
-    const fetchTotalsQuery = `SELECT COUNT(conversationid) AS interactions,SUM(CASE WHEN comments = 'positive' THEN 1 ELSE 0 END) AS positive,SUM(CASE WHEN comments = 'negative' THEN 1 ELSE 0 END) AS negative FROM botfeedback WHERE TRUNC(startdate) BETWEEN TO_DATE(:fromDate, 'YYYY-MM-DD') AND TO_DATE(:toDate, 'YYYY-MM-DD');`;
-    console.log("2Inside bot-feedback-trend");
+    const fetchTotalsQuery = `SELECT COUNT(conversationid) AS interactions,SUM(CASE WHEN comments = 'positive' THEN 1 ELSE 0 END) AS positive,SUM(CASE WHEN comments != 'positive' THEN 1 ELSE 0 END) AS negative FROM botfeedback WHERE TRUNC(startdate) BETWEEN TO_DATE(:fromDate, 'YYYY-MM-DD') AND TO_DATE(:toDate, 'YYYY-MM-DD')`;
+
     const currentTotals = await connection.execute(fetchTotalsQuery, {
       fromDate,
       toDate,
@@ -231,12 +234,21 @@ app.post("/bot-feedback-trend", async (req, res) => {
 
     const calcPercentageChange = (current, previous) => {
       if (previous === 0) return current > 0 ? 100 : 0;
-      return ((current - previous) / previous) * 100;
+      return Math.ceil(((current - previous) / previous) * 10000)/100;
     };
-
+   
+    const calcRatio = (feedback, interactions) => {
+      if (interactions === 0) return feedback > 0 ? 100 : 0;
+      return ((feedback / interactions)*100);
+    };
     const current = processTotals(currentTotals);
     const previous = processTotals(previousTotals);
-
+    const pfrprev = Math.ceil(calcRatio(previous.positive,previous.interactions)*100)/100
+    const pfrcurr = Math.ceil(calcRatio(current.positive,current.interactions)*100)/100;
+    const pfr = Math.ceil((pfrcurr-pfrprev)*1000)/1000;
+    const nfrcurr = Math.ceil(calcRatio(current.negative,current.interactions)*100)/100;
+    const nfrprev = Math.ceil(calcRatio(previous.negative,previous.interactions)*100)/100;
+    const nfr = Math.ceil((nfrcurr-nfrprev)*1000)/1000;
     // Calculate percentage changes
     const percentChanges = {
       interactions: calcPercentageChange(
@@ -245,15 +257,18 @@ app.post("/bot-feedback-trend", async (req, res) => {
       ),
       positive: calcPercentageChange(current.positive, previous.positive),
       negative: calcPercentageChange(current.negative, previous.negative),
+      pfr: pfr,
+      nfr: nfr,
     };
     console.log({
-      currentPeriod: current,
+      currentPeriod: {...current,pfrcurr,nfrcurr},
+      previousPeriod:{...previous,pfrprev,nfrprev},
       percentChanges,
       FeedSuccess: "True",
     });
 
     res.json({
-      currentPeriod: current,
+      currentPeriod: {...current,pfrcurr,nfrcurr},
       percentChanges,
       FeedSuccess: "True",
     });
