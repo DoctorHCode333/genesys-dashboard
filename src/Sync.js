@@ -590,7 +590,6 @@ const CategoriesReporting = (props) => {
 
 export default CategoriesReporting;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 import React, { useState, useRef } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
@@ -602,528 +601,89 @@ import {
   insertUserInfo,
 } from "../API/TopicAPI";
 import Loading from "../Loading";
-
 import * as XLSX from "xlsx";
-
-import "./DialogStyle.css";
 import { Toast } from "primereact/toast";
 import { MultiSelect } from "primereact/multiselect";
+import "./DialogStyle.css";
 
-const DownloadView = () => {
-  const [loading, setLoading] = useState(false);
-
+const DownloadView = ({ summaryData }) => {
   const [visible, setVisible] = useState(false);
+  const [finalData, setFinalData] = useState({
+    positiveFeedback: [],
+    negativeFeedback: [],
+  });
+  const [selectedTopics, setSelectedTopics] = useState([]);
+  const toast = useRef(null);
+
+  // Use selectors for date range and filters
   const fetchedDateRange = useSelector((state) => state.dateRange);
   const fetchedFilters = useSelector((state) => state.fetchFilters);
-  const fetchedReduxData = useSelector((state) => state.fetchedData);
-  const fetchedCurrentDate = useSelector((state) => state.fetchCurrentDate);
-  const fetchedCurrentTopic = useSelector((state) => state.fetchCurrentTopic);
-  const fetchedUserName = useSelector((state) => state.fetchUserName);
 
-  // this is for summary data
-  const [rowData, setRowData] = useState([]);
-  // this is for entire data of topics in the format name: , data:
-  const [finalData, setFinalData] = useState([]);
+  const cities = summaryData.map((item) => ({ name: item.topic }));
 
-  //for storing selected topics
-  const [selectedCities, setSelectedCities] = useState([]);
-
-  // getting what are the topics need to display on display preview
-  // const cities = fetchedReduxData.labels.map((item) => (
-  //     { name: item }
-  // ));
-  const [cities, setCities] = useState([]);
-
-  const getUniqniqueNames = (data) => {
-    const uniqName = new Set();
-    data.forEach((item) => uniqName.add(item[0]));
-    return Array.from(uniqName);
-  };
-  const toast = useRef(null);
-  const show = () => {
-    toast.current.show({
-      severity: "error",
-      summary: "Invalid Date Range",
-      detail: "Please select a valid date range",
-    });
-  };
-
-  const downloadStartShow = () => {
-    toast.current.show({
-      severity: "info",
-      summary: "Downloading started",
-      detail: "Please wait sometime to get downloaded",
-      life: 3000,
-    });
-  };
-
-  const downloadSuccessShow = () => {
-    toast.current.show({
-      severity: "success",
-      summary: "Successfully downloaded",
-      detail: "Thanks for your patience",
-      life: 3000,
-    });
-  };
-
-  const downloadErrorShow = () => {
-    toast.current.show({
-      severity: "error",
-      summary: "Download error",
-      detail: "Sorry, please try after sometimes",
-      life: 3000,
-    });
+  const showToast = (severity, summary, detail) => {
+    toast.current.show({ severity, summary, detail, life: 3000 });
   };
 
   const handleDownload = async () => {
-    if (
-      fetchedDateRange.startDate == null ||
-      fetchedDateRange.endDate == null
-    ) {
-      console.log("please select date");
-      // alert('Please select valid date');
-      show();
-    } else {
-      setVisible(true);
-      setLoading(true);
+    if (!fetchedDateRange.startDate || !fetchedDateRange.endDate) {
+      showToast("error", "Invalid Date Range", "Please select a valid date range");
+      return;
+    }
 
-      setFinalData([]);
-      setCities([]);
-      setRowData([]);
-      setSelectedCities([]);
+    setVisible(true); // Show the dialog with the loading component
 
-      console.log("inside handle downlod topc");
-      const response = await getDownloadTopicsCount({
+    try {
+      // Insert user information (assuming this is required for logging purposes)
+      await insertUserInfo({
+        userId: "currentUserId", // Replace with actual user ID
+        action: "download",
+      });
+
+      // Fetch feedback data for the selected topics and date range
+      const { positiveFeedback, negativeFeedback } = await getDownloadTopicsAllData({
         startDate: fetchedDateRange.startDate,
         endDate: fetchedDateRange.endDate,
         filterData: fetchedFilters,
-      });
-      setRowData(response.rows);
-      let x = response.rows;
-
-      //
-      const TopicNames = getUniqniqueNames(x);
-      // const TopicNames = fetchedReduxData.labels;
-
-      console.log(
-        response,
-        "Dowwnload count api response --tahnks",
-        TopicNames
-      );
-      //--------------------------
-
-      TopicNames.map(async (item) => {
-        const responseAllData = await getDownloadTopicsAllData({
-          startDate: fetchedDateRange.startDate,
-          endDate: fetchedDateRange.endDate,
-          filterData: fetchedFilters,
-          topic_name: item,
-        });
-        setFinalData((prevData) => [
-          ...prevData,
-          { name: item, data: responseAllData.rows },
-        ]);
-        setCities((prevData) => [...prevData, { name: item }]);
-        console.log(
-          responseAllData,
-          "Dowwnload all data api response --tahnks",
-          item
-        );
+        topics: selectedTopics.length ? selectedTopics : cities.map((c) => c.name),
       });
 
-      console.log(finalData, "FInal data for download topics");
-      setTimeout(() => {
-        setLoading(false);
-      }, 50000);
-
-      await insertUserInfo({
-        UserName: fetchedUserName.userName,
-        loginDate: new Date(),
-        activityData: {
-          dateRange: fetchedDateRange,
-          filter: fetchedFilters,
-          currentDate: fetchedCurrentDate.currentDate,
-          currentTopic: fetchedCurrentTopic.currentTopic,
-
-          topicDownload: {
-            buttonClick: true,
-            topicSelected: null,
-            generatedExcel: false,
-          },
-          phraseDownload: {
-            buttonClick: false,
-            phrasesSelected: null,
-            generatedExcel: false,
-          },
-        },
-      });
+      // Set the final data for the tabs
+      setFinalData({ positiveFeedback, negativeFeedback });
+    } catch (error) {
+      showToast("error", "Download Error", "Failed to fetch feedback data");
+    } finally {
+      setVisible(false); // Hide the dialog
     }
   };
 
-  const handleDownload1 = async () => {
-    setVisible(true);
-    setLoading(true);
-
-    setFinalData([]);
-    setRowData([]);
-
-    console.log(selectedCities, "selcted topic names");
-
-    if (selectedCities.length > 0) {
-      const response = await getDownloadTopicsCount({
-        startDate: fetchedDateRange.startDate,
-        endDate: fetchedDateRange.endDate,
-        filterData: fetchedFilters,
-      });
-      setRowData(response.rows);
-
-      selectedCities.map(async (item) => {
-        const responseAllData = await getDownloadTopicsAllData({
-          startDate: fetchedDateRange.startDate,
-          endDate: fetchedDateRange.endDate,
-          filterData: fetchedFilters,
-          topic_name: item.name,
-        });
-        setFinalData((prevData) => [
-          ...prevData,
-          { name: item.name, data: responseAllData.rows },
-        ]);
-        console.log(
-          responseAllData,
-          "Dowwnload all data api response --tahnks",
-          item
-        );
-      });
-
-      await insertUserInfo({
-        UserName: fetchedUserName.userName,
-        loginDate: new Date(),
-        activityData: {
-          dateRange: fetchedDateRange,
-          filter: fetchedFilters,
-          currentDate: fetchedCurrentDate.currentDate,
-          currentTopic: fetchedCurrentTopic.currentTopic,
-
-          topicDownload: {
-            buttonClick: true,
-            topicSelected: selectedCities,
-            generatedExcel: false,
-          },
-          phraseDownload: {
-            buttonClick: false,
-            phrasesSelected: null,
-            generatedExcel: false,
-          },
-        },
-      });
-    } else {
-      console.log("inside handle downlod topc");
-      const response = await getDownloadTopicsCount({
-        startDate: fetchedDateRange.startDate,
-        endDate: fetchedDateRange.endDate,
-        filterData: fetchedFilters,
-      });
-      setRowData(response.rows);
-      let x = response.rows;
-
-      //
-      const TopicNames = getUniqniqueNames(x);
-      // const TopicNames = fetchedReduxData.labels;
-
-      console.log(
-        response,
-        "Dowwnload count api response --tahnks",
-        TopicNames
-      );
-      //--------------------------
-
-      TopicNames.map(async (item) => {
-        const responseAllData = await getDownloadTopicsAllData({
-          startDate: fetchedDateRange.startDate,
-          endDate: fetchedDateRange.endDate,
-          filterData: fetchedFilters,
-          topic_name: item,
-        });
-        setFinalData((prevData) => [
-          ...prevData,
-          { name: item, data: responseAllData.rows },
-        ]);
-        console.log(
-          responseAllData,
-          "Dowwnload all data api response --tahnks",
-          item
-        );
-      });
-    }
-
-    console.log(finalData, "FInal data for download topics");
-    setTimeout(() => {
-      setLoading(false);
-    }, 30000);
-  };
-
-  const truncateSheetName = (name) => {
-    return name.length > 31
-      ? name.substring(0, 31 - (Math.floor(Math.random() * (20 - 5 + 1)) + 5)) +
-          "..."
-      : name;
-  };
-  const [links, setLinks] = useState([]);
-
-  //convert UTC time to normal time
-  const convertTime = (utcString) => {
-    let utcDate = new Date(utcString);
-
-    let localTimeString = utcDate.toLocaleString();
-    return localTimeString;
-  };
-
-  const generateExcel = async (summaryData, conversationData) => {
+  const generateExcel = () => {
     const wb = XLSX.utils.book_new();
-    // Add summary sheet
     const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-
-    summarySheet["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }];
+    const positiveSheet = XLSX.utils.json_to_sheet(finalData.positiveFeedback);
+    const negativeSheet = XLSX.utils.json_to_sheet(finalData.negativeFeedback);
 
     XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+    XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+    XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
 
-    // Add conversation sheets
-    conversationData.forEach((conversation, index) => {
-      let x = conversation.data;
-      // '=HYPERLINK("https://apps.usw2.pure.cloud/directory/#/engage/admin/interactions/item[0], "item[0")'
-      let data1 = [
-        [
-          "Conversation ID",
-          "Start Date",
-          "DNIS",
-          "Queue",
-          "Client ID",
-          "Market Type",
-          "LOB",
-          "Agent Name",
-          "Call Duration(mins)",
-          "Sentiment Score",
-          "Topic",
-          "Phrase",
-        ],
-      ];
-      let data = x.map((item) =>
-        data1.push([
-          item[0],
-          convertTime(item[1]),
-          item[2],
-          item[3],
-          item[4],
-          item[5],
-          item[6],
-          item[7],
-          item[8],
-          Math.round(item[9] * 100),
-          item[10],
-          item[11],
-        ])
-      );
-      // let data = x.map((item) => (
-      //     {
-      //         'Conversation ID': item[0],
-      //         'Start Date': item[1],
-      //         "DNIS": item[2],
-      //         "Queue": item[3],
-      //         "Client ID": item[4],
-      //         "Market Type": item[5],
-      //         "LOB": item[6],
-      //         "Agent ID": item[7],
-      //         "Call Duration": item[8],
-      //         "Sentiment Score": Math.round(item[9]*100),
-      //         "Topic": item[10],
-      //         "Phrase": item[11]
-      //     }
-      // ))
-
-      const truncateSheetName1 = truncateSheetName(
-        conversation.name.replace(/\//g, "_")
-      );
-      console.log(truncateSheetName1);
-      // const conversationSheet = XLSX.utils.json_to_sheet(data);
-      const conversationSheet = XLSX.utils.aoa_to_sheet(data1);
-      conversationSheet["!cols"] = [
-        { wch: 35 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-      ];
-      //   conversationData.map((item, index) => {
-      //     const cellAddress = XLSX.utils.encode_cell({c: 0, r:index+1});
-      //     conversationSheet[cellAddress] = {Target: 'www.google.com'}
-      //   })
-
-      for (let i = 1; i < data1.length; i++) {
-        const cellAddress = `A${i + 1}`;
-        const cell = conversationSheet[cellAddress];
-        if (!cell) continue;
-        const id = data1[i][0];
-
-        (cell.l = {
-          Target: `https://apps.usw2.pure.cloud/directory/#/engage/admin/interactions/${id}`,
-          Tooltip: "Click to visit link",
-          Rel: "nofollow",
-        }),
-          (cell.v = id);
-      }
-      XLSX.utils.book_append_sheet(wb, conversationSheet, truncateSheetName1);
-    });
-    // Generate Excel file and initiate download
-
-    // Generate Excel file and initiate download
-    let fileName = "HistoricalTrends " + date1 + " to " + date2 + ".xlsx";
-
-    XLSX.writeFile(wb, fileName);
-    console.log("successfuly donloaded");
+    XLSX.writeFile(wb, "Feedback_Report.xlsx");
+    showToast("success", "Download Successful", "Excel file has been downloaded");
   };
 
-  const downloadAllTopicsExcel = async () => {
-    downloadStartShow();
-
-    // making as a json format for rowData
-    // WO EB HO WS
-    console.log("iniside download excel");
-    //  const result = {};
-
-    //  rowData.map((item) => {
-    //     let name = item[0];
-    //     if(!result[name]){
-    //         result[name] = {
-    //             item[0],
-    //                 }
-    //     }
-
-    //  })
-    const transformData = (data) => {
-      // setCustomers(props.data.map((item) => (
-
-      //     {name: item[0], count: item[1], percentage: item[2].toFixed(2), lob: item[3]}
-      // )))
-      const result = {};
-      data.map((item) => {
-        if (!result[item[0]]) {
-          result[item[0]] = {
-            Topic: item[0],
-            countWS: 0,
-            percentWS: 0,
-            countWO: 0,
-            percentWO: 0,
-            countEB: 0,
-            percentEB: 0,
-            countHO: 0,
-            percentHO: 0,
-          };
-        }
-
-        switch (item[3]) {
-          case "WS":
-            result[item[0]].countWS = item[1];
-            result[item[0]].percentWS = item[2].toFixed(2);
-            break;
-          case "WO":
-            result[item[0]].countWO = item[1];
-            result[item[0]].percentWO = item[2].toFixed(2);
-            break;
-          case "EB":
-            result[item[0]].countEB = item[1];
-            result[item[0]].percentEB = item[2].toFixed(2);
-            break;
-          case "HO":
-            result[item[0]].countHO = item[1];
-            result[item[0]].percentHO = item[2].toFixed(2);
-            break;
-          default:
-            break;
-        }
-      });
-      return Object.values(result);
-    };
-    // const Summary = rowData.map((item) =>(
-    //     // {
-    //     //     Topic: item[0],
-    //     //     Count : item[1],
-    //     //     '% in WO': item[2].toFixed(2),
-    //     //     // '% in WS':1,
-    //     //     // '% in EB':2,
-    //     //     // '% in HO': 3
-    //     // }
-    // ))
-    const Summary = transformData(rowData);
-
-    console.log(Summary, finalData, "Summary and final dtaa");
-    // await generateExcel(Summary, finalData);
-
-    setTimeout(async () => {
-      try {
-        await generateExcel(Summary, finalData);
-
-        downloadSuccessShow();
-
-        await insertUserInfo({
-          UserName: fetchedUserName.userName,
-          loginDate: new Date(),
-          activityData: {
-            dateRange: fetchedDateRange,
-            filter: fetchedFilters,
-            currentDate: fetchedCurrentDate.currentDate,
-            currentTopic: fetchedCurrentTopic.currentTopic,
-
-            topicDownload: {
-              buttonClick: true,
-              topicSelected: selectedCities,
-              generatedExcel: true,
-            },
-            phraseDownload: {
-              buttonClick: false,
-              phrasesSelected: null,
-              generatedExcel: false,
-            },
-          },
-        });
-      } catch (error) {
-        downloadErrorShow();
-      }
-    }, 5000);
-
-    console.log("successfully donwloaded");
+  const downloadExcel = () => {
+    generateExcel();
   };
-
-  const formatDate = (dateString) => {
-    let dateObject = new Date(dateString);
-    dateObject.setDate(dateObject.getDate() + 1);
-    let endDate = dateObject.toISOString().split("T")[0];
-
-    var date = new Date(endDate);
-    var options = { day: "numeric", month: "long", year: "numeric" };
-    var formatter = new Intl.DateTimeFormat("en-US", options);
-    return formatter.format(date);
-  };
-
-  const date1 = formatDate(fetchedDateRange.startDate);
-  const date2 = formatDate(fetchedDateRange.endDate);
 
   return (
-    <div className="card flex  ">
+    <div className="card flex">
       <Toast ref={toast} />
       <Button
         label="Download"
-        className=" mt-3 border mb-2 mr-2 text-white text-xs  font-semibold py-2 px-4 rounded-lg  "
+        className="mt-3 border mb-2 mr-2 text-white text-xs font-semibold py-2 px-4 rounded-lg"
         icon="pi pi-download"
         onClick={handleDownload}
       />
-
       <div className="bg-gradient-to-tl from-orange-400 via-amber-400 to-orange-400">
         <Dialog
           header="Topic Download Preview"
@@ -1133,47 +693,42 @@ const DownloadView = () => {
           style={{ width: "80%" }}
           onHide={() => setVisible(false)}
         >
-          {loading ? (
-            <Loading />
-          ) : (
-            <>
-              <p className="m-0 ">
-                you can download the below data of topics from{" "}
-                <b>
-                  {" "}
-                  {date1} to {date2}
-                </b>{" "}
-                as excel format
-                <button
-                  icon="pi pi-download"
-                  className="px-2 py-1  text-black font-extrabold"
-                  onClick={downloadAllTopicsExcel}
-                >
-                  <i className="pi pi-download"></i>
-                </button>
-              </p>
-              <div className="flex justify-end items-center text-xs mb-2">
-                <MultiSelect
-                  value={selectedCities}
-                  onChange={(e) => setSelectedCities(e.value)}
-                  options={cities}
-                  optionLabel="name"
-                  filter
-                  placeholder="Select Topics"
-                  maxSelectedLabels={3}
-                  className="w-full mb-1 border md:w-60 "
-                />
-
-                <Button
-                  label="Apply"
-                  className="ml-3 bg-blue-950  border mb-2 mr-2 text-white text-xs  font-semibold py-3 px-8 rounded-lg  "
-                  onClick={handleDownload1}
-                />
-              </div>
-              <hr />
-              <DownloadTabView rowData={rowData} finalData={finalData} />
-            </>
-          )}
+          {/* Use Loading component directly */}
+          <Loading />
+          <p className="m-0">
+            You can download the below data of topics from{" "}
+            <b>
+              {" "}
+              {fetchedDateRange.startDate} to {fetchedDateRange.endDate}
+            </b>{" "}
+            as an Excel file.
+            <button
+              icon="pi pi-download"
+              className="px-2 py-1 text-black font-extrabold"
+              onClick={downloadExcel}
+            >
+              <i className="pi pi-download"></i>
+            </button>
+          </p>
+          <div className="flex justify-end items-center text-xs mb-2">
+            <MultiSelect
+              value={selectedTopics}
+              onChange={(e) => setSelectedTopics(e.value)}
+              options={cities}
+              optionLabel="name"
+              filter
+              placeholder="Select Topics"
+              maxSelectedLabels={3}
+              className="w-full mb-1 border md:w-60"
+            />
+            <Button
+              label="Apply"
+              className="ml-3 bg-blue-950 border mb-2 mr-2 text-white text-xs font-semibold py-3 px-8 rounded-lg"
+              onClick={handleDownload}
+            />
+          </div>
+          <hr />
+          <DownloadTabView rowData={summaryData} finalData={finalData} />
         </Dialog>
       </div>
     </div>
@@ -1181,5 +736,3 @@ const DownloadView = () => {
 };
 
 export default DownloadView;
-
-
