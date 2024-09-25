@@ -282,6 +282,127 @@ app.post("/bot-feedback-trend", async (req, res) => {
   }
 });
 
+const express = require('express');
+const oracledb = require('oracledb'); // Assuming you're using Oracle DB
+const { format, parseISO, subDays, differenceInDays } = require('date-fns');
+const app = express();
+const port = 3000; // Update the port as needed
+
+app.use(express.json()); // Middleware to parse JSON requests
+
+app.post("/bot-feedback-downloadData", async (req, res) => {
+    const targetFormatter = "yyyy-MM-dd";
+    let fromDate = req.body.startDate;
+    let toDate = req.body.endDate;
+    let connection;
+
+    try {
+        // Format and validate input date
+        fromDate = format(parseISO(fromDate), targetFormatter);
+        toDate = format(parseISO(toDate), targetFormatter);
+
+        const period = differenceInDays(parseISO(toDate), parseISO(fromDate)) + 1;
+        console.log(`Period: ${period}`);
+        
+        const previousFromDate = format(subDays(parseISO(fromDate), period), targetFormatter);
+        const previousToDate = format(subDays(parseISO(fromDate), 1), targetFormatter);
+        
+        console.log(`Previous Dates: ${previousFromDate} - ${previousToDate}`);
+
+        connection = await oracledb.getConnection(dbConfig); // Assume dbConfig is defined elsewhere
+        
+        // Fetch total data for current and previous periods
+        const fetchTotalsQuery = `
+            SELECT 
+                COUNT(conversationid) AS interactions,
+                SUM(CASE WHEN comments = 'positive' THEN 1 ELSE 0 END) AS positive,
+                SUM(CASE WHEN comments != 'positive' THEN 1 ELSE 0 END) AS negative 
+            FROM 
+                botfeedback 
+            WHERE 
+                TRUNC(startdate) BETWEEN TO_DATE(:fromDate, 'YYYY-MM-DD') AND TO_DATE(:toDate, 'YYYY-MM-DD')`;
+
+        const currentTotals = await connection.execute(fetchTotalsQuery, { fromDate, toDate });
+        const previousTotals = await connection.execute(fetchTotalsQuery, { fromDate: previousFromDate, toDate: previousToDate });
+
+        const processTotals = (data) => ({
+            interactions: data.rows[0][0],
+            positive: data.rows[0][1],
+            negative: data.rows[0][2],
+        });
+
+        const current = processTotals(currentTotals);
+        const previous = processTotals(previousTotals);
+
+        const calcPercentageChange = (current, previous) => {
+            if (previous === 0) return current > 0 ? 100 : 0;
+            return Math.ceil(((current - previous) / previous) * 10000) / 100;
+        };
+
+        const pfrcurr = Math.ceil((current.positive / current.interactions) * 100) / 100 || 0;
+        const nfrcurr = Math.ceil((current.negative / current.interactions) * 100) / 100 || 0;
+
+        // Calculate the PFR/NFR ratio for interactions
+        const pfrNfrRatio = (nfrcurr === 0) ? (pfrcurr * 100) : (pfrcurr / nfrcurr); // Prevent division by zero
+
+        // Constructing the summaryData object
+        const summaryData = {
+            TotalInteractions: {
+                header: 'Total interactions',
+                count: current.interactions,
+                percentageChange: calcPercentageChange(current.interactions, previous.interactions),
+                pfrNfrRatio: pfrNfrRatio,
+            },
+            PositiveFeedback: {
+                header: 'Positive feedback',
+                count: current.positive,
+                percentageChange: calcPercentageChange(current.positive, previous.positive),
+                pfrNfrRatio: pfrcurr, // Use PFR for positive feedback
+            },
+            NegativeFeedback: {
+                header: 'Negative feedback',
+                count: current.negative,
+                percentageChange: calcPercentageChange(current.negative, previous.negative),
+                pfrNfrRatio: nfrcurr, // Use NFR for negative feedback
+            },
+        };
+
+        // Prepare download data
+        const positiveFeedbackData = await connection.execute(`
+            SELECT comments
+            FROM botfeedback
+            WHERE comments = 'positive'
+            AND TRUNC(startdate) BETWEEN TO_DATE(:fromDate, 'YYYY-MM-DD') AND TO_DATE(:toDate, 'YYYY-MM-DD')`, 
+            { fromDate, toDate });
+
+        const negativeFeedbackData = await connection.execute(`
+            SELECT comments
+            FROM botfeedback
+            WHERE comments != 'positive'
+            AND TRUNC(startdate) BETWEEN TO_DATE(:fromDate, 'YYYY-MM-DD') AND TO_DATE(:toDate, 'YYYY-MM-DD')`, 
+            { fromDate, toDate });
+
+        const downloadData = {
+            positiveFeedback: positiveFeedbackData.rows,
+            negativeFeedback: negativeFeedbackData.rows,
+        };
+
+        // Send response
+        res.json({
+            summaryData,
+            downloadData,
+            FeedSuccess: "True",
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.json({ FeedFail: "True" });
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+});
+
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
