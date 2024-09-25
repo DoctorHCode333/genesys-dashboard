@@ -593,86 +593,127 @@ export default CategoriesReporting;
 import React, { useState, useRef } from "react";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
-import DownloadTabView from "./DownloadTabView";
 import { useSelector } from "react-redux";
-import {
-  getDownloadTopicsAllData,
-  getDownloadTopicsCount,
-  insertUserInfo,
-} from "../API/TopicAPI";
 import Loading from "../Loading";
 import * as XLSX from "xlsx";
 import { Toast } from "primereact/toast";
 import { MultiSelect } from "primereact/multiselect";
-import "./DialogStyle.css";
+import DownloadTabView from "./DownloadTabView";
+
+// Mock API function for demonstration
+const fetchDownloadData = async ({ startDate, endDate }) => {
+  // Replace this with the actual API call
+  return {
+    summary: [{ topic: "Example", count: 10, percentage: 50 }],
+    positiveFeedback: [
+      { id: 1, comment: "Great service!", sentiment: "positive" },
+    ],
+    negativeFeedback: [
+      { id: 2, comment: "Bad experience.", sentiment: "negative" },
+    ],
+  };
+};
 
 const DownloadView = ({ summaryData }) => {
   const [visible, setVisible] = useState(false);
-  const [finalData, setFinalData] = useState({
+  const [downloadData, setDownloadData] = useState({
+    summary: [],
     positiveFeedback: [],
     negativeFeedback: [],
   });
   const [selectedTopics, setSelectedTopics] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchedDateRange = useSelector((state) => state.dateRange);
+
   const toast = useRef(null);
 
-  // Use selectors for date range and filters
-  const fetchedDateRange = useSelector((state) => state.dateRange);
-  const fetchedFilters = useSelector((state) => state.fetchFilters);
-
-  const cities = summaryData.map((item) => ({ name: item.topic }));
-
-  const showToast = (severity, summary, detail) => {
-    toast.current.show({ severity, summary, detail, life: 3000 });
+  const showExcelDownloadToast = () => {
+    toast.current.show({
+      severity: "info",
+      summary: "Excel Download",
+      detail: "The Excel file is being generated and will download shortly.",
+      life: 3000,
+    });
   };
 
+  const showDownloadSuccessToast = () => {
+    toast.current.show({
+      severity: "success",
+      summary: "Download Complete",
+      detail: "The Excel file has been successfully downloaded.",
+      life: 3000,
+    });
+  };
+
+  const showDownloadErrorToast = () => {
+    toast.current.show({
+      severity: "error",
+      summary: "Download Failed",
+      detail: "An error occurred during the download. Please try again.",
+      life: 3000,
+    });
+  };
+
+  // Fetches the data and displays the dialog.
   const handleDownload = async () => {
     if (!fetchedDateRange.startDate || !fetchedDateRange.endDate) {
-      showToast("error", "Invalid Date Range", "Please select a valid date range");
+      toast.current.show({
+        severity: "error",
+        summary: "Invalid Date Range",
+        detail: "Please select a valid date range.",
+      });
       return;
     }
 
-    setVisible(true); // Show the dialog with the loading component
+    setLoading(true);
+    setVisible(true); // Show the dialog
 
     try {
-      // Insert user information (assuming this is required for logging purposes)
-      await insertUserInfo({
-        userId: "currentUserId", // Replace with actual user ID
-        action: "download",
-      });
-
-      // Fetch feedback data for the selected topics and date range
-      const { positiveFeedback, negativeFeedback } = await getDownloadTopicsAllData({
+      const response = await fetchDownloadData({
         startDate: fetchedDateRange.startDate,
         endDate: fetchedDateRange.endDate,
-        filterData: fetchedFilters,
-        topics: selectedTopics.length ? selectedTopics : cities.map((c) => c.name),
       });
 
-      // Set the final data for the tabs
-      setFinalData({ positiveFeedback, negativeFeedback });
+      setDownloadData(response);
+      setLoading(false);
     } catch (error) {
-      showToast("error", "Download Error", "Failed to fetch feedback data");
-    } finally {
-      setVisible(false); // Hide the dialog
+      setLoading(false);
+      setVisible(false); // Hide the dialog on error
+      showDownloadErrorToast();
     }
   };
 
+  // This function generates the Excel file based on the downloadData state.
   const generateExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-    const positiveSheet = XLSX.utils.json_to_sheet(finalData.positiveFeedback);
-    const negativeSheet = XLSX.utils.json_to_sheet(finalData.negativeFeedback);
+    try {
+      const wb = XLSX.utils.book_new();
 
-    XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
-    XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
-    XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+      // Adding Summary Sheet
+      const summarySheet = XLSX.utils.json_to_sheet(downloadData.summary);
+      XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
 
-    XLSX.writeFile(wb, "Feedback_Report.xlsx");
-    showToast("success", "Download Successful", "Excel file has been downloaded");
+      // Adding Positive Feedback Sheet
+      const positiveSheet = XLSX.utils.json_to_sheet(downloadData.positiveFeedback);
+      XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+
+      // Adding Negative Feedback Sheet
+      const negativeSheet = XLSX.utils.json_to_sheet(downloadData.negativeFeedback);
+      XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+
+      const fileName = `FeedbackData ${fetchedDateRange.startDate} to ${fetchedDateRange.endDate}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      showDownloadSuccessToast();
+    } catch (error) {
+      showDownloadErrorToast();
+    }
   };
 
-  const downloadExcel = () => {
-    generateExcel();
+  // This function is called when the user clicks the download button inside the dialog.
+  const downloadExcelData = () => {
+    showExcelDownloadToast(); // Show toast indicating download is starting
+    generateExcel(); // Generate and download Excel file
   };
 
   return (
@@ -684,51 +725,64 @@ const DownloadView = ({ summaryData }) => {
         icon="pi pi-download"
         onClick={handleDownload}
       />
+
       <div className="bg-gradient-to-tl from-orange-400 via-amber-400 to-orange-400">
         <Dialog
-          header="Topic Download Preview"
+          header="Data Download Preview"
           className="custom-dialog"
           visible={visible}
           maximizable
           style={{ width: "80%" }}
           onHide={() => setVisible(false)}
         >
-          {/* Use Loading component directly */}
-          <Loading />
-          <p className="m-0">
-            You can download the below data of topics from{" "}
-            <b>
-              {" "}
-              {fetchedDateRange.startDate} to {fetchedDateRange.endDate}
-            </b>{" "}
-            as an Excel file.
-            <button
-              icon="pi pi-download"
-              className="px-2 py-1 text-black font-extrabold"
-              onClick={downloadExcel}
-            >
-              <i className="pi pi-download"></i>
-            </button>
-          </p>
-          <div className="flex justify-end items-center text-xs mb-2">
-            <MultiSelect
-              value={selectedTopics}
-              onChange={(e) => setSelectedTopics(e.value)}
-              options={cities}
-              optionLabel="name"
-              filter
-              placeholder="Select Topics"
-              maxSelectedLabels={3}
-              className="w-full mb-1 border md:w-60"
-            />
-            <Button
-              label="Apply"
-              className="ml-3 bg-blue-950 border mb-2 mr-2 text-white text-xs font-semibold py-3 px-8 rounded-lg"
-              onClick={handleDownload}
-            />
-          </div>
-          <hr />
-          <DownloadTabView rowData={summaryData} finalData={finalData} />
+          {loading ? (
+            <Loading />
+          ) : (
+            <>
+              <p className="m-0">
+                You can download the below data from{" "}
+                <b>
+                  {fetchedDateRange.startDate} to {fetchedDateRange.endDate}
+                </b>{" "}
+                as an Excel file.
+                <button
+                  className="px-2 py-1 text-black font-extrabold"
+                  onClick={downloadExcelData}
+                >
+                  <i className="pi pi-download"></i>
+                </button>
+              </p>
+              <div className="flex justify-end items-center text-xs mb-2">
+                <MultiSelect
+                  value={selectedTopics}
+                  onChange={(e) => setSelectedTopics(e.value)}
+                  options={[
+                    { name: "Summary" },
+                    { name: "Positive Feedback" },
+                    { name: "Negative Feedback" },
+                  ]}
+                  optionLabel="name"
+                  placeholder="Select Topics"
+                  maxSelectedLabels={3}
+                  className="w-full mb-1 border md:w-60"
+                />
+
+                <Button
+                  label="Apply"
+                  className="ml-3 bg-blue-950 border mb-2 mr-2 text-white text-xs font-semibold py-3 px-8 rounded-lg"
+                  onClick={() => {
+                    // This Apply button can be used to filter the data shown in the tabs if necessary.
+                  }}
+                />
+              </div>
+              <hr />
+              <DownloadTabView
+                summaryData={downloadData.summary}
+                positiveFeedback={downloadData.positiveFeedback}
+                negativeFeedback={downloadData.negativeFeedback}
+              />
+            </>
+          )}
         </Dialog>
       </div>
     </div>
