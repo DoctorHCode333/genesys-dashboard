@@ -413,6 +413,9 @@ app.listen(port, () => {
 
 ////////////////////////////////////////
 import React, { useState, useEffect } from "react";
+import "primereact/resources/themes/lara-light-indigo/theme.css"; //theme
+import "primereact/resources/primereact.min.css"; //core css
+import "primeicons/primeicons.css"; //icons
 import { useDispatch, useSelector } from "react-redux";
 import { setTrendData, setDailyData, setCardData } from "../Redux/actions";
 import {
@@ -427,6 +430,7 @@ import {
   Stack,
 } from "@mui/material";
 import { Delete as DeleteIcon } from "@mui/icons-material";
+import InfoIcon from "@mui/icons-material/Info";
 import { motion } from "framer-motion";
 import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 import { areaElementClasses } from "@mui/x-charts/LineChart";
@@ -499,9 +503,8 @@ function AreaGradient({ color, id }) {
 //   }
 // }
 const CategoriesReporting = (props) => {
-  const { trendData, dailyData, cardData,setCardData} = props;
-  console.log(props);
-  
+  const { trendData, dailyData, cardData, setCardData } = props;
+
   const dispatch = useDispatch();
   // const fetchedDateRange = useSelector((state) => state.dateRange);
   // const trendData = useSelector((state) => state.fetchTrendData);
@@ -509,46 +512,85 @@ const CategoriesReporting = (props) => {
   // const cardData = useSelector((state) => state.fetchCardData);
   //  console.log("myrtersergsgrsegseg",cardData);
   // console.log("myrtersergsgrsegseg",fetchedDateRange);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState(0);
 
   const [cards, setCards] = useState([
-    { category: "Interactions", isRemovable: false },
-    { category: "Positive Feedback", isRemovable: false },
-    { category: "Negative Feedback", isRemovable: false },
+    {
+      category: "Total Feedback",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+    },
+    {
+      category: "Positive Feedback",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+    },
+    {
+      category: "Negative Feedback",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+    },
+    {
+      category: "PFR",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+    },
+    {
+      category: "NFR",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+    },
   ]);
-
-  const [loading, setLoading] = useState(true);
 
   // Update cardData only when trendData and dailyData are available
   useEffect(() => {
-    if (trendData && dailyData) {
-      console.log("Setting card data with trendData and dailyData");
-        setCardData({
-          Interactions: {
-            value: trendData.currentPeriod?.interactions || 0,
-            trend: trendData.percentChanges?.interactions || 0,
-            data: dailyData.interactions || [],
-          },
-          "Positive Feedback": {
-            value: trendData.currentPeriod?.positive || 0,
-            trend: trendData.percentChanges?.positive || 0,
-            data: dailyData.positivedataset || [],
-          },
-          "Negative Feedback": {
-            value: trendData.currentPeriod?.negative || 0,
-            trend: trendData.percentChanges?.negative || 0,
-            data: dailyData.negativedataset || [],
-          },
-        })
+    //console.log(Object.keys(dailyData).length)
+    if (
+      Object.keys(trendData).length !== 0 &&
+      Object.keys(dailyData).length !== 0
+    ) {
+      //console.log("Setting card data with trendData and dailyData",Object.keys(trendData).length)
+      setCardData({
+        "Total Feedback": {
+          value: trendData.currentPeriod?.interactions || 0,
+          trend: trendData.percentChanges?.interactions || 0,
+          data: dailyData.interactionsArray || [],
+        },
+        "Positive Feedback": {
+          value: trendData.currentPeriod?.positive || 0,
+          trend: trendData.percentChanges?.positive || 0,
+          data: dailyData.positiveFeedbackArray || [],
+        },
+        "Negative Feedback": {
+          value: trendData.currentPeriod?.negative || 0,
+          trend: trendData.percentChanges?.negative || 0,
+          data: dailyData.negativeFeedbackArray || [],
+        },
+        PFR: {
+          value: trendData.currentPeriod?.pfrcurr || 0,
+          trend: trendData.percentChanges?.pfr || 0,
+          data: dailyData.PFRArray || [],
+        },
+        NFR: {
+          value: trendData.currentPeriod?.nfrcurr || 0,
+          trend: trendData.percentChanges?.nfr || 0,
+          data: dailyData.NFRArray || [],
+        },
+      });
       //setLoading(false); // Data is loaded, update loading state
     }
   }, [trendData, dailyData]);
 
   // Log cardData updates
   useEffect(() => {
-    if (cardData) {
-      console.log("Updated card data:", cardData);
+    // console.log(Object.keys(cardData).length)
+    if (Object.keys(cardData).length !== 0) {
+      // console.log("Updated card data:", cardData);
+      // console.log("Updated card data:", dailyData);
+      setPeriod(dailyData.timePeriod.length);
+      setLoading(false);
     }
-    setLoading(false)
   }, [cardData]);
 
   if (loading) {
@@ -571,12 +613,21 @@ const CategoriesReporting = (props) => {
         >
           <Grid
             container
-            spacing={2}
+            spacing={3}
             justifyContent="center"
             sx={{ minWidth: "900px" }}
           >
             {cards.map((card, index) => {
-              const trend = cardData[card.category].trend >= 0 ? "up" : "down";
+              const category = card.category;
+              const trend =
+                cardData[category].trend >= 0
+                  ? category == "Negative Feedback" || category == "NFR"
+                    ? "down"
+                    : "up"
+                  : category == "Negative Feedback" || category == "NFR"
+                  ? "up"
+                  : "down";
+              const trendData = cardData[category].trend;
               const chartColor = trend === "up" ? "#00FF00" : "#991350"; // Green for positive, Purple for negative
 
               return (
@@ -588,7 +639,7 @@ const CategoriesReporting = (props) => {
                   >
                     <Card
                       variant="elevation"
-                      sx={{ height: "100%", pb: "0px" }}
+                      sx={{ height: "100%", pb: "0px" , minWidth:"max-content"}}
                     >
                       <Box
                         sx={{
@@ -605,6 +656,7 @@ const CategoriesReporting = (props) => {
                         <Typography
                           variant="h6"
                           sx={{
+                            whiteSpace:'nowrap',
                             fontSize: "1rem",
                             color: "white",
                             fontFamily: "Optima, sans-serif",
@@ -613,6 +665,12 @@ const CategoriesReporting = (props) => {
                         >
                           {card.category}
                         </Typography>
+                        <Tooltip title={card.description}>
+                          <IconButton sx={{padding:0,margin:0}} size="small">
+                            <InfoIcon sx={{color:'#fff',backgroudColour:'#000',borderRadius:'50%', fontSize:20}}/>
+                          </IconButton>
+                        </Tooltip>
+
                         {card.isRemovable && (
                           <IconButton
                             onClick={() =>
@@ -666,14 +724,14 @@ const CategoriesReporting = (props) => {
                                 title={`There was a ${Math.abs(
                                   cardData[card.category]?.trend || 0
                                 ).toFixed(2)}% ${
-                                  trend === "up" ? "increase" : "decrease"
-                                } in the last 7 days`}
+                                  trendData > 0 ? "increase" : "decrease"
+                                } in the last ${period} days`}
                               >
                                 <Chip
                                   size="small"
                                   color={trend === "up" ? "success" : "error"}
                                   sx={{ fontSize: ".9rem" }}
-                                  label={`${trend === "up" ? "+" : ""}${(
+                                  label={`${trendData > 0 ? "+" : ""}${(
                                     cardData[card.category]?.trend || 0
                                   ).toFixed(2)}%`}
                                 />
@@ -686,7 +744,7 @@ const CategoriesReporting = (props) => {
                                 fontSize: ".9rem",
                               }}
                             >
-                              Last 7 Days
+                              Last {period} Days
                             </Typography>
                           </Stack>
 
