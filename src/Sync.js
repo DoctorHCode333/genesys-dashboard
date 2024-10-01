@@ -416,25 +416,13 @@ import React, { useState, useEffect } from "react";
 import "primereact/resources/themes/lara-light-indigo/theme.css"; //theme
 import "primereact/resources/primereact.min.css"; //core css
 import "primeicons/primeicons.css"; //icons
-import { useDispatch, useSelector } from "react-redux";
-import { setTrendData, setDailyData, setCardData } from "../Redux/actions";
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  IconButton,
-  Grid,
-  Chip,
-  Tooltip,
-  Stack,
-} from "@mui/material";
+import { useDispatch } from "react-redux";
+import { Box, Card, CardContent, Typography, IconButton, Grid, Chip, Tooltip, Stack } from "@mui/material";
 import { Delete as DeleteIcon } from "@mui/icons-material";
 import InfoIcon from "@mui/icons-material/Info";
 import { motion } from "framer-motion";
 import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 import { areaElementClasses } from "@mui/x-charts/LineChart";
-import { getBotFeedback, getBotFeedbackTrend } from "../API/TopicAPI";
 
 function AreaGradient({ color, id }) {
   return (
@@ -446,111 +434,23 @@ function AreaGradient({ color, id }) {
     </defs>
   );
 }
-//sample response cardData object for reference
-// {
-//   "Interactions": {
-//       "value": 1607,
-//       "trend": 12.299091544374562,
-//       "data": {
-//           "2024-09-16": 376,
-//           "2024-09-17": 330,
-//           "2024-09-18": 270,
-//           "2024-09-19": 265,
-//           "2024-09-20": 266,
-//           "2024-09-21": 100
-//       }
-//   },
-//   "Positive Feedback": {
-//       "value": 1049,
-//       "trend": 12.072649572649572,
-//       "data": {
-//           "2024-09-16": 242,
-//           "2024-09-17": 222,
-//           "2024-09-18": 173,
-//           "2024-09-19": 170,
-//           "2024-09-20": 177,
-//           "2024-09-21": 65
-//       }
-//   },
-//   "Negative Feedback": {
-//       "value": 0,
-//       "trend": 0,
-//       "data": {
-//           "2024-09-16": 134,
-//           "2024-09-17": 108,
-//           "2024-09-18": 97,
-//           "2024-09-19": 95,
-//           "2024-09-20": 89,
-//           "2024-09-21": 35
-//       }
-//   },
-//   "cardData": {
-//       "Interactions": {
-//           "value": 0,
-//           "trend": 0,
-//           "data": []
-//       },
-//       "Positive Feedback": {
-//           "value": 0,
-//           "trend": 0,
-//           "data": []
-//       },
-//       "Negative Feedback": {
-//           "value": 0,
-//           "trend": 0,
-//           "data": []
-//       }
-//   }
-// }
+
 const CategoriesReporting = (props) => {
   const { trendData, dailyData, cardData, setCardData } = props;
-
   const dispatch = useDispatch();
-  // const fetchedDateRange = useSelector((state) => state.dateRange);
-  // const trendData = useSelector((state) => state.fetchTrendData);
-  // const dailyData = useSelector((state) => state.fetchDailyData);
-  // const cardData = useSelector((state) => state.fetchCardData);
-  //  console.log("myrtersergsgrsegseg",cardData);
-  // console.log("myrtersergsgrsegseg",fetchedDateRange);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(0);
 
   const [cards, setCards] = useState([
-    {
-      category: "Total Feedback",
-      isRemovable: false,
-      description: `This card shows total count of feedback in last ${period} days.`,
-    },
-    {
-      category: "Positive Feedback",
-      isRemovable: false,
-      description: `This card shows total count of feedback in last ${period} days.`,
-    },
-    {
-      category: "Negative Feedback",
-      isRemovable: false,
-      description: `This card shows total count of feedback in last ${period} days.`,
-    },
-    {
-      category: "PFR",
-      isRemovable: false,
-      description: `This card shows total count of feedback in last ${period} days.`,
-    },
-    {
-      category: "NFR",
-      isRemovable: false,
-      description: `This card shows total count of feedback in last ${period} days.`,
-    },
+    { category: "Total Feedback", isRemovable: false, description: `This card shows total count of feedback in last ${period} days.` },
+    { category: "Positive Feedback", isRemovable: false, description: `This card shows total count of feedback in last ${period} days.` },
+    { category: "Negative Feedback", isRemovable: false, description: `This card shows total count of feedback in last ${period} days.` },
+    { category: "PFR", isRemovable: false, description: `This card shows total count of feedback in last ${period} days.` },
+    { category: "NFR", isRemovable: false, description: `This card shows total count of feedback in last ${period} days.` },
   ]);
 
-  // Update cardData only when trendData and dailyData are available
   useEffect(() => {
-    //console.log(Object.keys(dailyData).length)
-    if (
-      Object.keys(trendData).length !== 0 &&
-      Object.keys(dailyData).length !== 0
-    ) {
-      //console.log("Setting card data with trendData and dailyData",Object.keys(trendData).length)
+    if (Object.keys(trendData).length !== 0 && Object.keys(dailyData).length !== 0) {
       setCardData({
         "Total Feedback": {
           value: trendData.currentPeriod?.interactions || 0,
@@ -578,16 +478,11 @@ const CategoriesReporting = (props) => {
           data: dailyData.NFRArray || [],
         },
       });
-      //setLoading(false); // Data is loaded, update loading state
     }
   }, [trendData, dailyData]);
 
-  // Log cardData updates
   useEffect(() => {
-    // console.log(Object.keys(cardData).length)
     if (Object.keys(cardData).length !== 0) {
-      // console.log("Updated card data:", cardData);
-      // console.log("Updated card data:", dailyData);
       setPeriod(dailyData.timePeriod.length);
       setLoading(false);
     }
@@ -597,192 +492,147 @@ const CategoriesReporting = (props) => {
     return <div>Loading...</div>;
   } else {
     return (
-      <div style={{ marginTop: "10px" }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "20vh",
-            backgroundColor: "#004E70",
-            padding: "0px",
-            maxWidth: "60%",
-            margin: "0px auto 30px",
-          }}
+      <Box sx={{ mt: 3, maxWidth: "100%", mx: "auto" }}>
+        <Grid
+          container
+          spacing={3}
+          justifyContent="center"
+          sx={{ maxWidth: "1200px", margin: "0 auto" }}
         >
-          <Grid
-            container
-            spacing={3}
-            justifyContent="center"
-            sx={{ minWidth: "900px" }}
-          >
-            {cards.map((card, index) => {
-              const category = card.category;
-              const trend =
-                cardData[category].trend >= 0
-                  ? category == "Negative Feedback" || category == "NFR"
-                    ? "down"
-                    : "up"
-                  : category == "Negative Feedback" || category == "NFR"
-                  ? "up"
-                  : "down";
-              const trendData = cardData[category].trend;
-              const chartColor = trend === "up" ? "#00FF00" : "#991350"; // Green for positive, Purple for negative
+          {cards.map((card, index) => {
+            const category = card.category;
+            const trend =
+              cardData[category].trend >= 0
+                ? category === "Negative Feedback" || category === "NFR"
+                  ? "down"
+                  : "up"
+                : category === "Negative Feedback" || category === "NFR"
+                ? "up"
+                : "down";
+            const trendData = cardData[category].trend;
+            const chartColor = trend === "up" ? "#00FF00" : "#991350";
 
-              return (
-                <Grid item xs={2} sm={2} md={2.4} lg={2.4} xl={2.4} key={index}>
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
+            return (
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                lg={3}
+                key={index}
+                sx={{ display: "flex" }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  style={{ width: "100%" }}
+                >
+                  <Card
+                    variant="elevation"
+                    sx={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}
                   >
-                    <Card
-                      variant="elevation"
-                      sx={{ height: "100%", pb: "0px" , minWidth:"max-content"}}
+                    <Box
+                      sx={{
+                        background: "linear-gradient(to right, #FF4B00, #FF8000)",
+                        padding: 1,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderTopLeftRadius: "2px",
+                        borderTopRightRadius: "2px",
+                      }}
                     >
-                      <Box
+                      <Typography
+                        variant="h6"
                         sx={{
-                          background:
-                            "linear-gradient(to right, #FF4B00, #FF8000)",
-                          padding: 1,
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          borderTopLeftRadius: "2px",
-                          borderTopRightRadius: "2px",
+                          whiteSpace: "nowrap",
+                          fontSize: "1rem",
+                          color: "white",
+                          fontFamily: "Optima, sans-serif",
+                          fontWeight: "bold",
                         }}
                       >
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            whiteSpace:'nowrap',
-                            fontSize: "1rem",
-                            color: "white",
-                            fontFamily: "Optima, sans-serif",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {card.category}
-                        </Typography>
-                        <Tooltip title={card.description}>
-                          <IconButton sx={{padding:0,margin:0}} size="small">
-                            <InfoIcon sx={{color:'#fff',backgroudColour:'#000',borderRadius:'50%', fontSize:20}}/>
-                          </IconButton>
-                        </Tooltip>
+                        {card.category}
+                      </Typography>
+                      <Tooltip title={card.description}>
+                        <IconButton sx={{ padding: 0, margin: 0 }} size="small">
+                          <InfoIcon sx={{ color: "#fff", borderRadius: "50%", fontSize: 20 }} />
+                        </IconButton>
+                      </Tooltip>
 
-                        {card.isRemovable && (
-                          <IconButton
-                            onClick={() =>
-                              setCards(cards.filter((_, i) => i !== index))
-                            }
-                            sx={{ color: "#002B5B" }}
+                      {card.isRemovable && (
+                        <IconButton
+                          onClick={() => setCards(cards.filter((_, i) => i !== index))}
+                          sx={{ color: "#002B5B" }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
+                    </Box>
+
+                    <CardContent
+                      sx={{ backgroundColor: "white", padding: "8px", flexGrow: 1 }}
+                    >
+                      <Stack direction="column" sx={{ gap: 1 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography
+                            variant="h6"
+                            component="p"
+                            sx={{ fontSize: ".9rem", color: trend === "up" ? "#00FF00" : "#991350" }}
                           >
-                            <DeleteIcon />
-                          </IconButton>
-                        )}
-                      </Box>
+                            {cardData[card.category]?.value || 0}
+                          </Typography>
+                          <Tooltip
+                            title={`There was a ${Math.abs(
+                              cardData[card.category]?.trend || 0
+                            ).toFixed(2)}% ${
+                              trendData > 0 ? "increase" : "decrease"
+                            } in the last ${period} days`}
+                          >
+                            <Chip
+                              size="small"
+                              color={trend === "up" ? "success" : "error"}
+                              sx={{ fontSize: ".9rem" }}
+                              label={`${trendData > 0 ? "+" : ""}${(
+                                cardData[card.category]?.trend || 0
+                              ).toFixed(2)}%`}
+                            />
+                          </Tooltip>
+                        </Stack>
+                        <Typography variant="caption" sx={{ color: "text.secondary", fontSize: ".9rem" }}>
+                          Last {period} Days
+                        </Typography>
 
-                      <CardContent
-                        sx={{
-                          backgroundColor: "white",
-                          padding: "0px !important",
-                        }}
-                      >
-                        <Stack
-                          direction="column"
-                          sx={{
-                            justifyContent: "space-between",
-                            gap: 1,
-                            padding: "0px",
-                          }}
-                        >
-                          <Stack
+                        <Box sx={{ width: "100%", height: 70, padding: "0px" }}>
+                          <SparkLineChart
+                            colors={[chartColor]}
+                            data={cardData[card.category]?.data || []}
+                            area
                             sx={{
-                              justifyContent: "space-between",
-                              padding: "5px 5px 0px",
+                              [`& .${areaElementClasses.root}`]: {
+                                fill: `url(#area-gradient-${card.category})`,
+                              },
                             }}
                           >
-                            <Stack
-                              direction="row"
-                              sx={{
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
-                            >
-                              <Typography
-                                variant="h6"
-                                component="p"
-                                sx={{
-                                  fontSize: ".9rem",
-                                  color: trend === "up" ? "#00FF00" : "#991350",
-                                }}
-                              >
-                                {cardData[card.category]?.value || 0}
-                              </Typography>
-                              <Tooltip
-                                title={`There was a ${Math.abs(
-                                  cardData[card.category]?.trend || 0
-                                ).toFixed(2)}% ${
-                                  trendData > 0 ? "increase" : "decrease"
-                                } in the last ${period} days`}
-                              >
-                                <Chip
-                                  size="small"
-                                  color={trend === "up" ? "success" : "error"}
-                                  sx={{ fontSize: ".9rem" }}
-                                  label={`${trendData > 0 ? "+" : ""}${(
-                                    cardData[card.category]?.trend || 0
-                                  ).toFixed(2)}%`}
-                                />
-                              </Tooltip>
-                            </Stack>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "text.secondary",
-                                fontSize: ".9rem",
-                              }}
-                            >
-                              Last {period} Days
-                            </Typography>
-                          </Stack>
-
-                          {/* Sparkline chart */}
-                          <Box
-                            sx={{ width: "100%", height: 70, padding: "0px" }}
-                          >
-                            <SparkLineChart
-                              colors={[chartColor]}
-                              data={cardData[card.category]?.data || []}
-                              area
-                              sx={{
-                                [`& .${areaElementClasses.root}`]: {
-                                  fill: `url(#area-gradient-${card.category})`,
-                                },
-                              }}
-                            >
-                              <AreaGradient
-                                color={chartColor}
-                                id={`area-gradient-${card.category}`}
-                              />
-                            </SparkLineChart>
-                          </Box>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              );
-            })}
-          </Grid>
-        </Box>
-      </div>
+                            <AreaGradient color={chartColor} id={`area-gradient-${card.category}`} />
+                          </SparkLineChart>
+                        </Box>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Box>
     );
   }
 };
 
 export default CategoriesReporting;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 import React, { useState, useRef } from "react";
 import { Button } from "primereact/button";
