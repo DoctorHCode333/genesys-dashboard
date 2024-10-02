@@ -22,21 +22,21 @@ const dbConfig = {
   connectString: "ctip.apptoapp.org:1521/ctip_Srvc.oracle.db",
 };
 
-app.post('/bot-feedback', async (req, res) => {
-  const orgFormatter = 'yyyy-MM-dd';
-  const targetFormatter = 'yyyy-MM-dd';
-  
+app.post("/bot-feedback", async (req, res) => {
+  const orgFormatter = "yyyy-MM-dd";
+  const targetFormatter = "yyyy-MM-dd";
+
   let fromDate = req.body.startDate;
   let toDate = req.body.endDate;
-  let flob = req.query.flob || 'all';
-  console.log("Date Range ", fromDate, toDate);
-  
+  let flob = req.query.flob || "all";
+  console.log("Date Range bot1", fromDate, toDate);
+
   let firstLoad = false;
   let connection;
 
   try {
     // If fromDate and toDate are not provided, set them to the current week
-    if ((!fromDate || fromDate === '') && (!toDate || toDate === '')) {
+    if ((!fromDate || fromDate === "") && (!toDate || toDate === "")) {
       const today = new Date();
       const startOfWeekDate = startOfWeek(today, { weekStartsOn: 0 }); // assuming week starts on Sunday
       const endOfWeekDate = endOfWeek(today, { weekStartsOn: 0 });
@@ -51,8 +51,8 @@ app.post('/bot-feedback', async (req, res) => {
     }
 
     // Ensure flob is in the correct format
-    const validFlobs = ['WS', 'EB', 'BF', 'HO', 'EBRC'];
-    flob = validFlobs.includes(flob) ? flob : 'WS';
+    const validFlobs = ["WS", "EB", "BF", "HO", "EBRC"];
+    flob = validFlobs.includes(flob) ? flob : "WS";
 
     // Establish a connection to the Oracle database
     connection = await oracledb.getConnection(dbConfig);
@@ -81,105 +81,112 @@ app.post('/bot-feedback', async (req, res) => {
     `;
 
     // Group by date to get daily counts
-    interactionsQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
-    negativeFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
-    positiveFeedbackQuery += ' GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)';
-    
+    interactionsQuery += " GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)";
+    negativeFeedbackQuery +=
+      " GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)";
+    positiveFeedbackQuery +=
+      " GROUP BY TRUNC(startdate) ORDER BY TRUNC(startdate)";
+
     // Execute the queries
     const interactionsResults = await connection.execute(interactionsQuery, {
       fromDate,
-      toDate
+      toDate,
     });
 
-    const negativeFeedbackResults = await connection.execute(negativeFeedbackQuery, {
-      fromDate,
-      toDate
-    });
+    const negativeFeedbackResults = await connection.execute(
+      negativeFeedbackQuery,
+      {
+        fromDate,
+        toDate,
+      }
+    );
 
-    const positiveFeedbackResults = await connection.execute(positiveFeedbackQuery, {
-      fromDate,
-      toDate
-    });
+    const positiveFeedbackResults = await connection.execute(
+      positiveFeedbackQuery,
+      {
+        fromDate,
+        toDate,
+      }
+    );
 
-    
     // Process interaction resultsdsd
-    const interactions = [];
-    interactionsResults.rows.forEach(result => {
-      interactions[result[0].toISOString().split('T')[0]] = result[1];
+    const interactions = {};
+    interactionsResults.rows.forEach((result) => {
+      interactions[result[0].toISOString().split("T")[0]] = result[1];
     });
 
     // Process negative feedback resultsdd
-    const negativeFeedback = [];
-    negativeFeedbackResults.rows.forEach(result => {
-      negativeFeedback[result[0].toISOString().split('T')[0]] = result[1];
+    const negativeFeedback = {};
+    negativeFeedbackResults.rows.forEach((result) => {
+      negativeFeedback[result[0].toISOString().split("T")[0]] = result[1];
     });
 
     // Process positive feedback results
-    const positiveFeedback = [];
-    positiveFeedbackResults.rows.forEach(result => {
-      positiveFeedback[result[0].toISOString().split('T')[0]] = result[1];
+    const positiveFeedback = {};
+    positiveFeedbackResults.rows.forEach((result) => {
+      positiveFeedback[result[0].toISOString().split("T")[0]] = result[1];
     });
 
     // Ensure both datasets have the same keys
-    const allDates = new Set([...Object.keys(negativeFeedback), ...Object.keys(positiveFeedback), ...Object.keys(interactions)]);
+    const allDates = new Set([
+      ...Object.keys(negativeFeedback),
+      ...Object.keys(positiveFeedback),
+      ...Object.keys(interactions),
+    ]);
 
-    allDates.forEach(date => {
+    allDates.forEach((date) => {
       if (!negativeFeedback[date]) negativeFeedback[date] = 0;
       if (!positiveFeedback[date]) positiveFeedback[date] = 0;
       if (!interactions[date]) interactions[date] = 0;
     });
     //console.log("fgfg",interactions);
-    
-    const sortedInteractions = Object.fromEntries(Object.entries(interactions).sort());
-    const sortedNegativeFeedback = Object.fromEntries(Object.entries(negativeFeedback).sort());
-    const sortedPositiveFeedback = Object.fromEntries(Object.entries(positiveFeedback).sort());
+
+    const sortedInteractions = Object.fromEntries(
+      Object.entries(interactions).sort()
+    );
+    const sortedNegativeFeedback = Object.fromEntries(
+      Object.entries(negativeFeedback).sort()
+    );
+    const sortedPositiveFeedback = Object.fromEntries(
+      Object.entries(positiveFeedback).sort()
+    );
+
+    const interactionsArray = Object.values(sortedInteractions);
+    const negativeFeedbackArray = Object.values(sortedNegativeFeedback);
+    const positiveFeedbackArray = Object.values(sortedPositiveFeedback);
+    let PFRArray = [];
+    let NFRArray = [];
+    let timePeriod = Object.keys(sortedInteractions);
+    interactionsArray.forEach((value, index) => {
+      if (value !== 0) {
+        PFRArray.push((positiveFeedbackArray[index] / value) * 100);
+        NFRArray.push((negativeFeedbackArray[index] / value) * 100);
+      } else {
+        PFRArray.push(0);
+        NFRArray.push(0);
+      }
+    });
 
     const responsePayload = {
-      interactions: interactions, // Include the sorted interactions count
-      negativedataset: negativeFeedback,
+      interactions: sortedInteractions, // Include the sorted interactions count
+      negativedataset: sortedNegativeFeedback,
       positivedataset: sortedPositiveFeedback,
-      FeedSuccess: 'True',
+      interactionsArray: interactionsArray,
+      negativeFeedbackArray: negativeFeedbackArray,
+      positiveFeedbackArray: positiveFeedbackArray,
+      PFRArray: PFRArray,
+      NFRArray: NFRArray,
+      timePeriod: timePeriod,
+      FeedSuccess: "True",
     };
-    console.log(responsePayload);
-    //gives correct result
-    // {
-    //   interactions: [
-    //     '2024-09-17': 330,
-    //     '2024-09-18': 270,
-    //     '2024-09-19': 265,
-    //     '2024-09-20': 266,
-    //     '2024-09-21': 100,
-    //     '2024-09-22': 91,
-    //     '2024-09-23': 16
-    //   ],
-    //   negativedataset: [
-    //     '2024-09-17': 108,
-    //     '2024-09-18': 97,
-    //     '2024-09-19': 95,
-    //     '2024-09-20': 89,
-    //     '2024-09-21': 35,
-    //     '2024-09-22': 26,
-    //     '2024-09-23': 3
-    //   ],
-    //   positivedataset: {
-    //     '2024-09-17': 222,
-    //     '2024-09-18': 173,
-    //     '2024-09-19': 170,
-    //     '2024-09-20': 177,
-    //     '2024-09-21': 65,
-    //     '2024-09-22': 65,
-    //     '2024-09-23': 13
-    //   },
-    //   FeedSuccess: 'True'
-    // }
+    console.log("bot1resp", responsePayload);
     res.json(responsePayload);
-
   } catch (error) {
     console.error(error);
     if (connection) {
       await connection.close();
     }
-    res.json({ FeedFail: 'True' });
+    res.json({ FeedFail: "True" });
   } finally {
     if (connection) {
       await connection.close();
@@ -199,10 +206,11 @@ app.post("/bot-feedback-trend", async (req, res) => {
     // Format and validate input date
     fromDate = format(parseISO(fromDate), targetFormatter);
     toDate = format(parseISO(toDate), targetFormatter);
+    console.log("bot2", fromDate, " ", toDate);
 
-    const period = differenceInDays(toDate,fromDate)+1;
-    console.log(period);
-    
+    const period = differenceInDays(toDate, fromDate) + 1;
+    console.log("per", period);
+
     const previousFromDate = format(
       subDays(parseISO(fromDate), period),
       targetFormatter
@@ -211,8 +219,8 @@ app.post("/bot-feedback-trend", async (req, res) => {
       subDays(parseISO(fromDate), 1),
       targetFormatter
     );
-    console.log(previousFromDate, " ",previousToDate);
-    
+    console.log(previousFromDate, " ", previousToDate);
+
     connection = await oracledb.getConnection(dbConfig);
     // Fetch total data for current and previous periods
     const fetchTotalsQuery = `SELECT COUNT(conversationid) AS interactions,SUM(CASE WHEN comments = 'positive' THEN 1 ELSE 0 END) AS positive,SUM(CASE WHEN comments != 'positive' THEN 1 ELSE 0 END) AS negative FROM botfeedback WHERE TRUNC(startdate) BETWEEN TO_DATE(:fromDate, 'YYYY-MM-DD') AND TO_DATE(:toDate, 'YYYY-MM-DD')`;
@@ -225,7 +233,7 @@ app.post("/bot-feedback-trend", async (req, res) => {
       fromDate: previousFromDate,
       toDate: previousToDate,
     });
-    console.log("3Inside bot-feedback-trend");
+
     const processTotals = (data) => ({
       interactions: data.rows[0][0],
       positive: data.rows[0][1],
@@ -234,21 +242,27 @@ app.post("/bot-feedback-trend", async (req, res) => {
 
     const calcPercentageChange = (current, previous) => {
       if (previous === 0) return current > 0 ? 100 : 0;
-      return Math.ceil(((current - previous) / previous) * 10000)/100;
+      return Math.ceil(((current - previous) / previous) * 10000) / 100;
     };
-   
+
     const calcRatio = (feedback, interactions) => {
       if (interactions === 0) return feedback > 0 ? 100 : 0;
-      return ((feedback / interactions)*100);
+      return (feedback / interactions) * 100;
     };
     const current = processTotals(currentTotals);
     const previous = processTotals(previousTotals);
-    const pfrprev = Math.ceil(calcRatio(previous.positive,previous.interactions)*100)/100
-    const pfrcurr = Math.ceil(calcRatio(current.positive,current.interactions)*100)/100;
-    const pfr = Math.ceil((pfrcurr-pfrprev)*1000)/1000;
-    const nfrcurr = Math.ceil(calcRatio(current.negative,current.interactions)*100)/100;
-    const nfrprev = Math.ceil(calcRatio(previous.negative,previous.interactions)*100)/100;
-    const nfr = Math.ceil((nfrcurr-nfrprev)*1000)/1000;
+    const pfrprev =
+      Math.ceil(calcRatio(previous.positive, previous.interactions) * 100) /
+      100;
+    const pfrcurr =
+      Math.ceil(calcRatio(current.positive, current.interactions) * 100) / 100;
+    const pfr = Math.ceil((pfrcurr - pfrprev) * 1000) / 1000;
+    const nfrcurr =
+      Math.ceil(calcRatio(current.negative, current.interactions) * 100) / 100;
+    const nfrprev =
+      Math.ceil(calcRatio(previous.negative, previous.interactions) * 100) /
+      100;
+    const nfr = Math.ceil((nfrcurr - nfrprev) * 1000) / 1000;
     // Calculate percentage changes
     const percentChanges = {
       interactions: calcPercentageChange(
@@ -261,14 +275,14 @@ app.post("/bot-feedback-trend", async (req, res) => {
       nfr: nfr,
     };
     console.log({
-      currentPeriod: {...current,pfrcurr,nfrcurr},
-      previousPeriod:{...previous,pfrprev,nfrprev},
+      currentPeriod: { ...current, pfrcurr, nfrcurr },
+      previousPeriod: { ...previous, pfrprev, nfrprev },
       percentChanges,
       FeedSuccess: "True",
     });
 
     res.json({
-      currentPeriod: {...current,pfrcurr,nfrcurr},
+      currentPeriod: { ...current, pfrcurr, nfrcurr },
       percentChanges,
       FeedSuccess: "True",
     });
@@ -281,14 +295,6 @@ app.post("/bot-feedback-trend", async (req, res) => {
     }
   }
 });
-
-const express = require('express');
-const oracledb = require('oracledb'); // Assuming you're using Oracle DB
-const { format, parseISO, subDays, differenceInDays } = require('date-fns');
-const app = express();
-const port = 3000; // Update the port as needed
-
-app.use(express.json()); // Middleware to parse JSON requests
 
 app.post("/bot-feedback-downloadData", async (req, res) => {
     const targetFormatter = "yyyy-MM-dd";
@@ -634,203 +640,164 @@ const CategoriesReporting = (props) => {
 export default CategoriesReporting;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-import React, { useState, useRef } from "react";
-import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { useSelector } from "react-redux";
-import Loading from "../Loading";
-import * as XLSX from "xlsx";
-import { Toast } from "primereact/toast";
-import { MultiSelect } from "primereact/multiselect";
-import DownloadTabView from "./DownloadTabView";
+app.post('/topics', (req, res) => {
+    const startDate = req.body.startDate;
+    let currentDate = req.body.endDate;
 
-// Mock API function for demonstration
-const fetchDownloadData = async ({ startDate, endDate }) => {
-  // Replace this with the actual API call
-  return {
-    summary: [{ topic: "Example", count: 10, percentage: 50 }],
-    positiveFeedback: [
-      { id: 1, comment: "Great service!", sentiment: "positive" },
-    ],
-    negativeFeedback: [
-      { id: 2, comment: "Bad experience.", sentiment: "negative" },
-    ],
-  };
-};
+    let dateObject = new Date(currentDate);
+    dateObject.setDate(dateObject.getDate() + 1);
+    let endDate = dateObject.toISOString().split('T')[0];
 
-const DownloadView = ({ summaryData }) => {
-  const [visible, setVisible] = useState(false);
-  const [downloadData, setDownloadData] = useState({
-    summary: [],
-    positiveFeedback: [],
-    negativeFeedback: [],
-  });
-  const [selectedTopics, setSelectedTopics] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const fetchedDateRange = useSelector((state) => state.dateRange);
+    const queues = req.body.queues ? req.body.queues : [];
+    const marketSector = req.body.marketSector ? req.body.marketSector : [];
+    const participantType = req.body.participantType ? req.body.participantType : [];
+    const lob = req.body.lob ? req.body.lob : [];
+    const clientID = req.body.ClientID ? req.body.ClientID : [];
+    const dnis = req.body.DNIS ? req.body.DNIS : [];
 
-  const toast = useRef(null);
+    const placeholdersForQueue = queues.map((_, i) => `:queue${i + 1}`).join(', ');
+    const placeholdersForMS = marketSector.map((_, i) => `:ms${i + 1}`).join(', ');
+    const placeholdersForPT = participantType.map((_, i) => `:pt${i + 1}`).join(', ');
+    const placeholdersForlob = lob.map((_, i) => `:lob${i + 1}`).join(', ');
+    const placeholdersForClientID = clientID.map((_, i) => `:cid${i + 1}`).join(', ');
+    const placeholdersForDNIS = dnis.map((_, i) => `:dnis${i + 1}`).join(', ');
 
-  const showExcelDownloadToast = () => {
-    toast.current.show({
-      severity: "info",
-      summary: "Excel Download",
-      detail: "The Excel file is being generated and will download shortly.",
-      life: 3000,
+
+
+
+
+
+    let query = `SELECT topicname,TO_CHAR(TRUNC(startdate), 'YYYY-MM-DD') AS start_date,COUNT(*)
+    FROM HIST_TOPICS_IXNS 
+    WHERE CAST(startdate AS TIMESTAMP WITH TIME ZONE) >= TO_TIMESTAMP_TZ('${startDate}', 'YYYY-MM-DD HH24:MI:SS TZH:TZM') 
+    AND CAST(startdate AS TIMESTAMP WITH TIME ZONE) <= TO_TIMESTAMP_TZ('${endDate}', 'YYYY-MM-DD HH24:MI:SS TZH:TZM') 
+    AND topicname IN ('Escalate to Supervisor', 'Misinformation- Incorrect Information Provided',
+   'Misinformation- Information NOT Provided',
+    'Distribution/Money Out',
+    'Reallocation',
+    'Account Information Update',
+    'Money Management',
+    'Make Payment',
+    'Incorrect Address',
+   'Digital Experience',
+    'Hardship',
+    'Fund to Fund Transfer',
+    'Transaction Status',
+    'RMD',
+    'ACH',
+    'Loans',
+    'Address Change',
+    'Cash Out',
+    'Statements',
+    'Investment Elections',
+    'Pension',
+   
+    'Contribution Change',
+    
+    'Rollover') AND lob='WS'`;
+    { req.body.queues.length > 0 ? query += ` AND queue IN (${placeholdersForQueue})` : null };
+    { req.body.marketSector.length > 0 ? query += ` AND market_type IN (${placeholdersForMS})` : null };
+    { req.body.participantType.length > 0 ? query += ` AND participant_type IN (${placeholdersForPT})` : null };
+    { req.body.lob.length > 0 ? query += ` AND lob IN (${placeholdersForlob})` : null };
+    { req.body.ClientID.length > 0 ? query += ` AND clientid IN (${placeholdersForClientID})` : null };
+    { req.body.DNIS.length > 0 ? query += ` AND dnis IN (${placeholdersForDNIS})` : null };
+
+
+    query += ` GROUP BY topicname, TRUNC(startdate)
+    ORDER BY topicname, TRUNC(startdate)`;
+
+    let binds = {}
+    queues.forEach((queue, index) => {
+        binds[`queue${index + 1}`] = {
+            dir: oracledb.BIND_IN,
+            val: queue.name,
+            type: oracledb.STRING
+        }
     });
-  };
 
-  const showDownloadSuccessToast = () => {
-    toast.current.show({
-      severity: "success",
-      summary: "Download Complete",
-      detail: "The Excel file has been successfully downloaded.",
-      life: 3000,
+    marketSector.forEach((ms, index) => {
+        binds[`ms${index + 1}`] = {
+            dir: oracledb.BIND_IN,
+            val: ms.name,
+            type: oracledb.STRING
+        }
     });
-  };
 
-  const showDownloadErrorToast = () => {
-    toast.current.show({
-      severity: "error",
-      summary: "Download Failed",
-      detail: "An error occurred during the download. Please try again.",
-      life: 3000,
+    participantType.forEach((pt, index) => {
+        binds[`pt${index + 1}`] = {
+            dir: oracledb.BIND_IN,
+            val: pt.name,
+            type: oracledb.STRING
+        }
     });
-  };
 
-  // Fetches the data and displays the dialog.
-  const handleDownload = async () => {
-    if (!fetchedDateRange.startDate || !fetchedDateRange.endDate) {
-      toast.current.show({
-        severity: "error",
-        summary: "Invalid Date Range",
-        detail: "Please select a valid date range.",
-      });
-      return;
+    lob.forEach((lob, index) => {
+        binds[`lob${index + 1}`] = {
+            dir: oracledb.BIND_IN,
+            val: lob.name,
+            type: oracledb.STRING
+        }
+    });
+
+    clientID.forEach((cid, index) => {
+        binds[`cid${index + 1}`] = {
+            dir: oracledb.BIND_IN,
+            val: cid.name,
+            type: oracledb.STRING
+        }
+    });
+
+    dnis.forEach((dnis, index) => {
+        binds[`dnis${index + 1}`] = {
+            dir: oracledb.BIND_IN,
+            val: dnis.name,
+            type: oracledb.STRING
+        }
+    });
+
+
+
+    console.log(binds, 'binds', query)
+
+
+
+
+
+    async function fetchDataInteractions() {
+        try {
+            // const connection = await oracledb.getConnection({
+            //     user: 'GEN_IXNDB',
+            //     password: 'genidb!_pr04_v0y4',
+            //     connectionString: 'gsysp-new.apptoapp.org/gsysp_Srvc.oracle.db'
+            // });
+            const connection = await oracledb.getConnection({
+                user: 'GEN_IXNDB',
+                password: 'Knu54h#I4dmE6P9a',
+                connectionString: 'ctip.apptoapp.org:1521/ctip_Srvc.oracle.db'
+            });
+            console.log('env ', process.platform)
+            const results = await connection.execute(query, binds);
+            console.log(results);
+            return results;
+
+
+        } catch (error) {
+            console.log(error)
+            return error;
+        }
     }
 
-    setLoading(true);
-    setVisible(true); // Show the dialog
+    fetchDataInteractions()
+        .then(dbres => {
+            //console.log(dbres);
+            console.log('env ', process.platform);
+            console.log(dbres, 'db result')
+            res.status(200).send(dbres);
 
-    try {
-      const response = await fetchDownloadData({
-        startDate: fetchedDateRange.startDate,
-        endDate: fetchedDateRange.endDate,
-      });
-
-      setDownloadData(response);
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      setVisible(false); // Hide the dialog on error
-      showDownloadErrorToast();
-    }
-  };
-
-  // This function generates the Excel file based on the downloadData state.
-  const generateExcel = () => {
-    try {
-      const wb = XLSX.utils.book_new();
-
-      // Adding Summary Sheet
-      const summarySheet = XLSX.utils.json_to_sheet(downloadData.summary);
-      XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
-
-      // Adding Positive Feedback Sheet
-      const positiveSheet = XLSX.utils.json_to_sheet(downloadData.positiveFeedback);
-      XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
-
-      // Adding Negative Feedback Sheet
-      const negativeSheet = XLSX.utils.json_to_sheet(downloadData.negativeFeedback);
-      XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
-
-      const fileName = `FeedbackData ${fetchedDateRange.startDate} to ${fetchedDateRange.endDate}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-
-      showDownloadSuccessToast();
-    } catch (error) {
-      showDownloadErrorToast();
-    }
-  };
-
-  // This function is called when the user clicks the download button inside the dialog.
-  const downloadExcelData = () => {
-    showExcelDownloadToast(); // Show toast indicating download is starting
-    generateExcel(); // Generate and download Excel file
-  };
-
-  return (
-    <div className="card flex">
-      <Toast ref={toast} />
-      <Button
-        label="Download"
-        className="mt-3 border mb-2 mr-2 text-white text-xs font-semibold py-2 px-4 rounded-lg"
-        icon="pi pi-download"
-        onClick={handleDownload}
-      />
-
-      <div className="bg-gradient-to-tl from-orange-400 via-amber-400 to-orange-400">
-        <Dialog
-          header="Data Download Preview"
-          className="custom-dialog"
-          visible={visible}
-          maximizable
-          style={{ width: "80%" }}
-          onHide={() => setVisible(false)}
-        >
-          {loading ? (
-            <Loading />
-          ) : (
-            <>
-              <p className="m-0">
-                You can download the below data from{" "}
-                <b>
-                  {fetchedDateRange.startDate} to {fetchedDateRange.endDate}
-                </b>{" "}
-                as an Excel file.
-                <button
-                  className="px-2 py-1 text-black font-extrabold"
-                  onClick={downloadExcelData}
-                >
-                  <i className="pi pi-download"></i>
-                </button>
-              </p>
-              <div className="flex justify-end items-center text-xs mb-2">
-                <MultiSelect
-                  value={selectedTopics}
-                  onChange={(e) => setSelectedTopics(e.value)}
-                  options={[
-                    { name: "Summary" },
-                    { name: "Positive Feedback" },
-                    { name: "Negative Feedback" },
-                  ]}
-                  optionLabel="name"
-                  placeholder="Select Topics"
-                  maxSelectedLabels={3}
-                  className="w-full mb-1 border md:w-60"
-                />
-
-                <Button
-                  label="Apply"
-                  className="ml-3 bg-blue-950 border mb-2 mr-2 text-white text-xs font-semibold py-3 px-8 rounded-lg"
-                  onClick={() => {
-                    // This Apply button can be used to filter the data shown in the tabs if necessary.
-                  }}
-                />
-              </div>
-              <hr />
-              <DownloadTabView
-                summaryData={downloadData.summary}
-                positiveFeedback={downloadData.positiveFeedback}
-                negativeFeedback={downloadData.negativeFeedback}
-              />
-            </>
-          )}
-        </Dialog>
-      </div>
-    </div>
-  );
-};
-
-export default DownloadView;
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(500).send({ message: "Internal Server Error", Error: err })
+        })
+})
