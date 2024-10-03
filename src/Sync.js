@@ -96,38 +96,61 @@ const generateExcel = async(summaryData, conversationData) => {
 
 
 
- const generateExcel = (selectedOptions) => {
+const generateExcel = (selectedOptions) => {
     try {
-      const wb = XLSX.utils.book_new();
+        const wb = XLSX.utils.book_new();
 
-      // Adding sheets conditionally based on selected options
-      const summarySheet = XLSX.utils.json_to_sheet(downloadData.summaryData);
-      const positiveSheet = XLSX.utils.json_to_sheet(downloadData.downloadData.positiveFeedback);
-      const negativeSheet = XLSX.utils.json_to_sheet(downloadData.downloadData.negativeFeedback);
+        // Adding sheets conditionally based on selected options
+        const summarySheet = XLSX.utils.json_to_sheet(downloadData.summaryData);
+        
+        // Create the positive feedback sheet with hyperlinks
+        const positiveFeedbackData = downloadData.downloadData.positiveFeedback.map((item) => ({
+            ...item,
+            // Create hyperlink for the conversation ID
+            'Conversation ID': {
+                v: item['Conversation ID'], // The visible value
+                l: { Target: `https://apps.usw2.pure.cloud/directory/#/engage/admin/interactions/${item['Conversation ID']}`, Tooltip: "Click to visit link" }
+            }
+        }));
 
-      if (selectedOptions.includes("All")) {
-        // If "All" is selected, include all sheets
-        XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
-        XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
-        XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
-      } else {
-        // Otherwise, include only the selected sheets
-        if (selectedOptions.includes("Summary")) {
-          XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+        // Create the negative feedback sheet with hyperlinks
+        const negativeFeedbackData = downloadData.downloadData.negativeFeedback.map((item) => ({
+            ...item,
+            // Create hyperlink for the conversation ID
+            'Conversation ID': {
+                v: item['Conversation ID'], // The visible value
+                l: { Target: `https://apps.usw2.pure.cloud/directory/#/engage/admin/interactions/${item['Conversation ID']}`, Tooltip: "Click to visit link" }
+            }
+        }));
+
+        // Convert the data to sheets
+        const positiveSheet = XLSX.utils.json_to_sheet(positiveFeedbackData);
+        const negativeSheet = XLSX.utils.json_to_sheet(negativeFeedbackData);
+
+        // Append sheets based on selection
+        if (selectedOptions.includes("All")) {
+            // If "All" is selected, include all sheets
+            XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+            XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+            XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+        } else {
+            // Otherwise, include only the selected sheets
+            if (selectedOptions.includes("Summary")) {
+                XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+            }
+            if (selectedOptions.includes("Positive Feedback")) {
+                XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+            }
+            if (selectedOptions.includes("Negative Feedback")) {
+                XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+            }
         }
-        if (selectedOptions.includes("Positive Feedback")) {
-          XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
-        }
-        if (selectedOptions.includes("Negative Feedback")) {
-          XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
-        }
-      }
 
-      const fileName = `FeedbackData_${dateRange.startDate}_to_${dateRange.endDate}.xlsx`;
-      XLSX.writeFile(wb, fileName);
+        const fileName = `FeedbackData_${dateRange.startDate}_to_${dateRange.endDate}.xlsx`;
+        XLSX.writeFile(wb, fileName);
 
-      showDownloadSuccessToast();
+        showDownloadSuccessToast();
     } catch (error) {
-      showDownloadErrorToast();
+        showDownloadErrorToast();
     }
-  };
+};
