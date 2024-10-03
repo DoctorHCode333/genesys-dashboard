@@ -249,6 +249,7 @@ export default DownloadTabView;
 /* Custom styling for the active tab underline */
 .p-tabview-nav li.p-highlight .p-tabview-title {
     position: relative; /* Ensure the title can position its children */
+    z-index: 1; /* Ensure the title is above the hr */
 }
 
 /* Adding space between the title and the hr */
@@ -257,20 +258,24 @@ export default DownloadTabView;
     position: absolute;
     left: 0; /* Align to the left */
     right: 0; /* Align to the right */
-    bottom: -4px; /* Position it slightly below the title */
+    bottom: -6px; /* Position it slightly below the title */
     height: 2px; /* Height of the hr */
     background-color: #007ad9; /* Use the color from the lara-light-indigo theme */
-    transition: width 0.3s ease; /* Animation for width */
+    transition: left 0.3s ease, width 0.3s ease; /* Smooth transition for position and width */
 }
 
-/* Adjust hr length and style */
+/* Style for the hr element itself */
 .p-tabview .p-tabview-content hr {
     margin-top: 10px; /* Space between the title and the hr */
     margin-bottom: 20px; /* Optional: Add margin below the hr if needed */
     border: none; /* Remove default border */
     border-top: 2px solid #007ad9; /* Color matching the lara-light-indigo theme */
-    width: 120%; /* Make hr length greater than title */
-    left: -10%; /* Align hr to the left to center it relative to the title */
-    position: relative; /* Ensure proper positioning */
+    width: 100%; /* Ensure hr takes full width */
     transition: all 0.3s ease; /* Add a transition effect */
+}
+
+/* To center hr based on tab width */
+.p-tabview-nav {
+    display: flex;
+    justify-content: space-between; /* This will ensure the tabs are spaced out properly */
 }
