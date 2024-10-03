@@ -1,183 +1,217 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "primereact/button";
-import { MultiSelect } from "primereact/multiselect";
+import { Dialog } from "primereact/dialog";
+import { useSelector } from "react-redux";
+import Loading from "../Loading";
+import * as XLSX from "xlsx";
 import { Toast } from "primereact/toast";
-import { OverlayPanel } from "primereact/overlaypanel";
-import { useDispatch } from "react-redux";
-//import { setFetchedData, setFilters } from "../Redux/actions";
+import { MultiSelect } from "primereact/multiselect";
+import DownloadTabView from "./DownloadTabView";
+import { getBotFeedbackDownlaodData } from "../../API/TopicAPI";
 
-import "primereact/resources/themes/lara-light-indigo/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeicons/primeicons.css";
-import "./custom-style.css";
+const DownloadView = (props) => {
+  const [visible, setVisible] = useState(false);
+  const { trendData, downloadData, filters, setDownloadData, dateRange } =
+    props;
 
-const PopupDoc = (props) => {
+  const [loading, setLoading] = useState(false);
+
+  const [selectedCities, setSelectedCities] = useState(["All"]);
+
+  // getting what are the topics need to display on display preview
+  // const cities = fetchedReduxData.labels.map((item) => (
+  //     { name: item }
+  // ));
+  const [cities, setCities] = useState([
+    {label:"All", value: "All"},
+    {label:"Summary", value: "Summary"},
+    {label:"Positive Feedback", value: "Positive Feedback"},
+    {label:"Negative Feedback", value: "Negative Feedback"},
+  ]);
 
   const toast = useRef(null);
-  const op = useRef(null);
 
-  const { globalFilters, filters, dateRange , setFilters} = props
-  
-  const [selectedLOB, setSelectedLOB] = useState([]);
-  const [selectedDeviceType, setSelectedDeviceType] = useState([]);
-  const [selectedInteractionReason, setSelectedInteractionReason] = useState([]);
-
-  const [LOB, setLOB] = useState([]);
-  const [deviceTypes, setDeviceTypes] = useState([]);
-  const [interactionReasons, setInteractionReasons] = useState([]);
-
-  const dispatch = useDispatch();
-
-  // Load the global filter options (i.e., what will be shown in dropdowns)
-  useEffect(() => {
-    if (globalFilters && globalFilters.lob.length > 0) {
-      console.log("globalFilters",globalFilters);
-        
-      setLOB(globalFilters.lob || []); // Safely handle empty globalFilters
-      setDeviceTypes(globalFilters.deviceType|| []);
-      setInteractionReasons(globalFilters.interactionReason|| []);
-    } else {
-      // Handle empty globalFilters by setting dropdown options to empty
-      setLOB([]);
-      setDeviceTypes([]);
-      setInteractionReasons([]);
-    }
-  }, [globalFilters]);
-
-  // Function to clear all user-selected filter selections
-  const clearSelections = () => {
-    setSelectedLOB([]);
-    setSelectedDeviceType([]);
-    setSelectedInteractionReason([]);
-
-    // Reset filters state to empty arrays
-    dispatch(
-      setFilters({
-        lob: [],
-        deviceType: [],
-        interactionReason: [],
-      })
-    );
+  const showExcelDownloadToast = () => {
+    toast.current.show({
+      severity: "info",
+      summary: "Excel Download",
+      detail: "The Excel file is being generated and will download shortly.",
+      life: 3000,
+    });
   };
 
-  // Function to apply user-selected filters and update Redux state
-  const applySelections = () => {
+  const showDownloadSuccessToast = () => {
+    toast.current.show({
+      severity: "success",
+      summary: "Download Complete",
+      detail: "The Excel file has been successfully downloaded.",
+      life: 3000,
+    });
+  };
+
+  const showDownloadErrorToast = () => {
+    toast.current.show({
+      severity: "error",
+      summary: "Download Failed",
+      detail: "An error occurred during the download. Please try again.",
+      life: 3000,
+    });
+  };
+
+  useEffect(() => {
+    if (Object.keys(downloadData).length !== 0) {
+      setLoading(false);
+    }
+  }, [downloadData]);
+  // Fetches the data and displays the dialog.
+  const handleDownload = async () => {
     if (!dateRange.startDate || !dateRange.endDate) {
-      // Show error if date range is not selected
       toast.current.show({
         severity: "error",
         summary: "Invalid Date Range",
-        detail: "Please select a valid date range",
+        detail: "Please select a valid date range.",
       });
       return;
     }
 
-    const filterData = {
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      lob: selectedLOB.length > 0 ? selectedLOB : [],
-      deviceType: selectedDeviceType.length > 0 ? selectedDeviceType : [],
-      interactionReason: selectedInteractionReason.length > 0 ? selectedInteractionReason : [],
-    };
+    setLoading(true);
+    setVisible(true); // Show the dialog
 
-    // Dispatch the selected filters to the Redux store
-    dispatch(setFilters(filterData));
-    //dispatch(setFetchedData([])); // Replace with the actual fetched data based on applied filters
+    try {
+      const response = await getBotFeedbackDownlaodData({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+        lob: filters.lob,
+        deviceType: filters.deviceType,
+        interactionReason: filters.interactionReason,
+      });
+
+      setDownloadData(response);
+    } catch (error) {
+      setLoading(false);
+      setVisible(false); // Hide the dialog on error
+      console.log("Error while fetching download Data", error);
+      showDownloadErrorToast();
+    }
   };
 
-  // When user manually opens/closes the panel
-  const onOverlayToggle = (e) => {
-    op.current.toggle(e);
+  // This function generates the Excel file based on the downloadData state.
+  const generateExcel = (arr) => {
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // Adding Summary Sheet
+      const summarySheet = XLSX.utils.json_to_sheet(downloadData.summaryData);
+
+      // Adding Positive Feedback Sheet
+      const positiveSheet = XLSX.utils.json_to_sheet(
+        downloadData.downloadData.positiveFeedback
+      );
+      // Adding Negative Feedback Sheet
+      const negativeSheet = XLSX.utils.json_to_sheet(
+        downloadData.downloadData.negativeFeedback
+      );
+
+      if ("All" in arr) {
+        XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+        XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+        XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+      } else {
+        if ("Summary" in arr) {
+          XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+        }
+        if ("Positive Feedback" in arr) {
+          XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+        }
+        if ("Negative Feedback" in arr) {
+          XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+        }
+      }
+
+      const fileName = `FeedbackData ${dateRange.startDate} to ${dateRange.endDate}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      showDownloadSuccessToast();
+    } catch (error) {
+      showDownloadErrorToast();
+    }
   };
 
+  const downloadExcelData = (arr) => {
+    //showExcelDownloadToast();
 
-if(LOB.length>0 || deviceTypes.length>0 || interactionReasons.length>0){
+    generateExcel(arr);
+  };
 
-    console.log(LOB,deviceTypes);
-    
   return (
-    <div className="card flex flex-column align-items-center w-sm">
-      <Toast ref={toast} />
-      <Button type="button" icon="pi pi-filter-fill" onClick={onOverlayToggle} />
+    <div>
+      <div className="card" style={{ maxWidth: "150px" }}>
+        <Toast ref={toast} />
+        <Button
+          label="Download"
+          className=" mt-3 border mb-2 mr-2 text-white text-xs  font-semibold py-2 px-4 rounded-lg  "
+          icon="pi pi-download"
+          onClick={handleDownload}
+        />
 
-      <OverlayPanel
-        ref={op}
-        showCloseIcon={false}
-        ariaCloseLabel="false"
-        closeOnEscape
-        dismissable={false}
-        className="mr-5"
-      >
-        <div className="flex justify-end pb-1">
-          <Button type="button" onClick={onOverlayToggle}>
-            Close
-          </Button>
+        <div>
+          <div className="bg-gradient-to-tl from-orange-400 via-amber-400 to-orange-400 rounded-xl">
+            <Dialog
+              header="Feedback Download Preview"
+              className="custom-dialog bg-gradient-to-tl from-orange-400 via-amber-400 to-orange-400 pt-10 rounded-xl"
+              visible={visible}
+              maximizable
+              style={{ width: "80%" }}
+              onHide={() => setVisible(false)}
+            >
+              {loading ? (
+                <Loading />
+              ) : (
+                <>
+                  <p className="mb-4 ">
+                    You can download the below data of Feedbacks from{" "}
+                    <b>
+                      {" "}
+                      {dateRange.startDate} to {dateRange.endDate}
+                    </b>{" "}
+                    as excel format
+                    {/* <button
+                          icon="pi pi-download"
+                          className="px-2 py-1  text-black font-extrabold"
+                          onClick={downloadExcelData(cities)}
+                        >
+                          <i className="pi pi-download"></i>
+                        </button> */}
+                  </p>
+                  <div className="flex justify-start items-center text-xs mb-2 mt-4">
+                    <MultiSelect
+                      value={selectedCities}
+                      onChange={(e) => setSelectedCities(e.value)}
+                      options={cities}
+                      optionLabel="label"
+                      filter
+                      placeholder="Select File"
+                      maxSelectedLabels={4}
+                      className="w-full mb-1 border md:w-60 "
+                    />
+
+                    <Button
+                      label="Download"
+                      className="ml-3 bg-blue-950  border mb-2 mr-2 text-white text-xs  font-semibold py-3 px-8 rounded-lg  "
+                      onClick={downloadExcelData(selectedCities)}
+                    />
+                  </div>
+                  <hr />
+                  <DownloadTabView {...props} />
+                  {/*rowData={rowData} finalData={finalData} */}
+                </>
+              )}
+            </Dialog>
+          </div>
         </div>
-
-        {/* LOB Filter */}
-        <MultiSelect
-          value={selectedLOB}
-          onChange={(e) => setSelectedLOB(e.value)}
-          options={LOB}
-          optionLabel="label"
-          filter
-          placeholder="LOB"
-          maxSelectedLabels={3}
-          className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
-          showSelectAll={false}
-          //disabled={LOB.length === 0} // Disable if no options
-        />
-        <br />
-
-        {/* Device Type Filter */}
-        <MultiSelect
-          value={selectedDeviceType}
-          onChange={(e) => setSelectedDeviceType(e.value)}
-          options={deviceTypes}
-          optionLabel="label"
-          filter
-          placeholder="Device Type"
-          maxSelectedLabels={3}
-          className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
-          showSelectAll={false}
-          //disabled={deviceTypes.length === 0} // Disable if no options
-        />
-        <br />
-
-        {/* Interaction Reason Filter */}
-        <MultiSelect
-          value={selectedInteractionReason}
-          onChange={(e) => setSelectedInteractionReason(e.value)}
-          options={interactionReasons}
-          optionLabel="label"
-          filter
-          placeholder="Interaction Reason"
-          maxSelectedLabels={3}
-          className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
-          showSelectAll={false}
-          //disabled={interactionReasons.length === 0} // Disable if no options
-        />
-
-        <div className="w-full flex justify-between">
-          {/* Clear Button */}
-          <Button
-            label="Clear"
-            onClick={clearSelections}
-            className="p-button-primary bg-fuchsia-950 ml-5 mt-3 text-white"
-            style={{ width: "100px", height: "35px" }}
-          />
-
-          {/* Apply Button */}
-          <Button
-            label="Apply"
-            onClick={applySelections}
-            className="w-80 p-button-primary bg-fuchsia-700 mr-5 mt-3 text-white"
-            style={{ width: "100px" }}
-          />
-        </div>
-      </OverlayPanel>
+      </div>
     </div>
   );
 };
-}
-export default PopupDoc;
+
+export default DownloadView;
