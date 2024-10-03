@@ -645,4 +645,138 @@ if(LOB.length>0 || deviceTypes.length>0 || interactionReasons.length>0){
 export default PopupDoc;
 
 
+return (
+        // <div className="card flex justify-content-center">
+        //     <Toast ref={toast}></Toast>
+        //     <Menu model={items} popup="true" ref={menu} id="popup_menu" className='mr-10' popupAlignment="left" dismissable="false" style={{ width: '350px' }} />
+        //     <Button icon="pi pi-filter-fill" className="mr-0" onClick={(event) => menu.current.toggle(event)} aria-controls="popup_menu" aria-haspopup />
+
+
+
+        // </div>
+        <div className="card flex flex-column align-items-center w-sm">
+            <Toast ref={toast}      />
+            <Button type="button" icon="pi pi-filter-fill" onClick={(e) => op.current.toggle(e)} />
+
+            <OverlayPanel ref={op} showCloseIcon={false} ariaCloseLabel='false' closeOnEscape dismissable={false} className="mr-5">
+
+                <div className='flex justify-end pb-1 '>
+                    <Button type="button" onClick={(e) => op.current.toggle(e)} >Close</Button>
+
+                </div>
+
+                {/* <MultiSelect
+                    value={selectedTopics}
+
+                    onChange={(e) => setSelectedTopic(prevState => {
+                        if(e.value.length <= 25){
+                            return e.value
+                        }else{
+                            return prevState
+                        }
+                    })}
+                    options={sortedItems}
+                    optionLabel='name'
+                    filter placeholder="Topics"
+                    maxSelectedLabels={3}
+                    className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+                    showSelectAll={false}
+                // disabled
+                />
+                <br/>
+                <small className='p-error'>You can only select up to 25 topics. </small>
+                
+                <br /> */}
+                
+
+
+                <MultiSelect
+                    value={selectedLOB}
+
+                    onChange={(e) => setSelectedLOB(prevState => (e.value))}
+                    options={LOB}
+                    optionLabel='name'
+                    filter placeholder="LOB"
+                    maxSelectedLabels={3}
+                    className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+                    showSelectAll={false}
+                // disabled
+                />
+                <br />
+
+                <MultiSelect
+                    value={selectedMarketSector}
+
+                    onChange={(e) => setSelectedMarketSector(prevState => (e.value))}
+                    options={marketSector}
+                    optionLabel='name'
+                    filter placeholder="Market Sector"
+                    maxSelectedLabels={3}
+                    className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+                    showSelectAll={false}
+                />
+                <br />
+                <MultiSelect
+                    value={selectedQueue}
+
+                    onChange={(e) => setSelectedQueue(prevState => (e.value))}
+                    options={queues}
+                    optionLabel='name'
+                    filter placeholder="Device Type"
+                    maxSelectedLabels={3}
+                    className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+                    showSelectAll={false}
+                />
+                <br />
+                {/* <MultiSelect
+                    value={selectedClientID}
+
+                    onChange={(e) => setSelectedClientID(prevState => (e.value))}
+                    options={clientid}
+                    optionLabel='name'
+                    filter placeholder="Client ID"
+                    maxSelectedLabels={3}
+                    className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+                    showSelectAll={false}
+                />
+                <br /> */}
+
+                {/* <MultiSelect
+                    value={selectedDNIS}
+
+                    onChange={(e) => setSelectedDNIS(prevState => (e.value))}
+                    options={dnis}
+                    optionLabel='name'
+                    filter placeholder="DNIS"
+                    maxSelectedLabels={3}
+                    className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+                    showSelectAll={false}
+                />
+                <br /> */}
+                <MultiSelect
+                    value={selectedParticipant}
+
+                    onChange={(e) => setSelectedParticipant(prevState => (e.value))}
+                    options={participant}
+                    optionLabel='name'
+                    filter placeholder="Interaction Reason"
+                    maxSelectedLabels={3}
+                    className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+                    showSelectAll={false}
+                />
+
+
+
+                <div className='w-full flex justify-between'>
+                    <Button label="Clear" onClick={clearSelections} className='p-button-primary bg-fuchsia-950 ml-5 mt-3 text-white' style={{ width: '100px', height: '35px' }} />
+
+                    <Button label="Apply" onClick={applySelections} className='w-80 p-button-primary bg-fuchsia-700 mr-5 mt-3 text-white' style={{ width: '100px' }} />
+
+                </div>
+
+
+            </OverlayPanel>
+        </div>
+    );
+}
 
