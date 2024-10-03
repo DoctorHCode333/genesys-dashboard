@@ -462,7 +462,6 @@ app.post("/bot-feedback-downloadData", async (req, res) => {
     }
 });
 //////////////////////////////////////////////////////////////
-
 import React, { useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { Menu } from "primereact/menu";
@@ -633,7 +632,8 @@ const PopupDoc = () => {
       //console.log('please select date');
 
       show();
-    } else {
+    } 
+    else {
       const data1 = {
         startDate: dateRange.startDate,
         endDate: dateRange.endDate,
@@ -648,83 +648,6 @@ const PopupDoc = () => {
       // console.log(selectedTopics.length, 'length of selectedTopics')
 
       if (selectedTopics.length >= 1) {
-        // const highestTopicNamesResponse = await getTopTopics(data1);
-        // console.log(highestTopicNamesResponse, 'highestTopicNames');
-
-        // let highestTopicNames = highestTopicNamesResponse.rows;
-        dispatch(setSelectedTopics(selectedTopics));
-
-        const topicInOrderResponse = await getSelectedTopicsInOrder({
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-          queues: selectedQueue ? selectedQueue : [],
-          marketSector: selectedMarketSector ? selectedMarketSector : [],
-          participantType: selectedParticipant ? selectedParticipant : [],
-          lob: selectedLOB ? selectedLOB : [],
-          ClientID: selectedClientID ? selectedClientID : [],
-          DNIS: selectedDNIS ? selectedDNIS : [],
-          selectedTopics: selectedTopics ? selectedTopics : [],
-        });
-
-        //console.log(topicInOrderResponse.rows, 'selected topic in order');
-
-        const topicsInDescentingOrder = topicInOrderResponse.rows;
-        const uniqName = topicsInDescentingOrder.map((item) => item[0]);
-
-        let resArray = [];
-
-        // for (const k of highestTopicNames) {
-        for (const k of topicsInDescentingOrder) {
-          getTopics({
-            startDate: dateRange.startDate,
-            endDate: dateRange.endDate,
-            queues: selectedQueue ? selectedQueue : [],
-            marketSector: selectedMarketSector ? selectedMarketSector : [],
-            participantType: selectedParticipant ? selectedParticipant : [],
-            lob: selectedLOB ? selectedLOB : [],
-            ClientID: selectedClientID ? selectedClientID : [],
-            DNIS: selectedDNIS ? selectedDNIS : [],
-            topicName: k[0],
-          }).then((response) => {
-            //console.log('API New Res', response);
-            let x = [response.rows].flat();
-            //console.log('....xxxxxxx', ...x, x);
-
-            // setResponseArray(prevData => [...prevData, ...x]);
-            resArray.push(...x);
-            //console.log(response, 'API response1234 Use effect', x, responseArray, k[0])
-
-            const stDate = new Date(dateRange.startDate);
-            const edDate = new Date(dateRange.endDate);
-
-            // const uniqName = getUniqniqueNames(resArray);
-            const result = getDataForDateRange(
-              uniqName,
-              resArray,
-              stDate,
-              edDate
-            );
-
-            //console.log('useEffect historical prem', result, uniqName)
-
-            let fetchData = createGraphData(result);
-            //console.log(fetchData, 'historical fetchData')
-
-            dispatch(setFetchedData(fetchData));
-            dispatch(setOriginalFetchedData(resArray));
-            dispatch(
-              setFilters({
-                queues: selectedQueue ? selectedQueue : [],
-                marketSector: selectedMarketSector ? selectedMarketSector : [],
-                participantType: selectedParticipant ? selectedParticipant : [],
-                lob: selectedLOB ? selectedLOB : [],
-                ClientID: selectedClientID ? selectedClientID : [],
-                DNIS: selectedDNIS ? selectedDNIS : [],
-              })
-            );
-          });
-        }
-
         await insertUserInfo({
           UserName: fetchedUserName.userName,
           loginDate: new Date(),
@@ -753,120 +676,10 @@ const PopupDoc = () => {
             },
           },
         });
-      } else {
-        //console.log('inside else part')
-
-        const highestTopicNamesResponse = await getTopTopics(data1);
-        //console.log(highestTopicNamesResponse, 'highestTopicNames Use effect');
-
-        let highestTopicNames = highestTopicNamesResponse.rows;
-
-        const transformedAlltopics = highestTopicNames.map((item) => {
-          return { name: item[0] };
-        });
-
-        const uniqName = highestTopicNames.map((item) => item[0]);
-
-        setSelectedTopic(transformedAlltopics);
-        dispatch(setSelectedTopics(transformedAlltopics));
-
-        setResponseArray([]);
-        let resArray = [];
-
-        highestTopicNames.map((k) => {
-          getTopics({
-            startDate: dateRange.startDate,
-            endDate: dateRange.endDate,
-            queues: selectedQueue ? selectedQueue : [],
-            marketSector: selectedMarketSector ? selectedMarketSector : [],
-            participantType: selectedParticipant ? selectedParticipant : [],
-            lob: selectedLOB ? selectedLOB : [],
-            ClientID: selectedClientID ? selectedClientID : [],
-            DNIS: selectedDNIS ? selectedDNIS : [],
-            topicName: k[0],
-          }).then((response) => {
-            //console.log('API New Res', response);
-            let x = [response.rows].flat();
-            // console.log('....xxxxxxx', ...x, x);
-
-            // setResponseArray(prevData => [...prevData, ...x]);
-            resArray.push(...x);
-            //console.log(response, 'API response1234 Use effect', x, responseArray, k[0])
-
-            const stDate = new Date(dateRange.startDate);
-            const edDate = new Date(dateRange.endDate);
-
-            // const uniqName = getUniqniqueNames(resArray);
-            const result = getDataForDateRange(
-              uniqName,
-              resArray,
-              stDate,
-              edDate
-            );
-
-            //console.log('useEffect historical prem', result, uniqName)
-
-            let fetchData = createGraphData(result);
-            //console.log(fetchData, 'historical fetchData')
-
-            dispatch(setFetchedData(fetchData));
-            dispatch(setOriginalFetchedData(resArray));
-            dispatch(
-              setFilters({
-                queues: selectedQueue ? selectedQueue : [],
-                marketSector: selectedMarketSector ? selectedMarketSector : [],
-                participantType: selectedParticipant ? selectedParticipant : [],
-                lob: selectedLOB ? selectedLOB : [],
-                ClientID: selectedClientID ? selectedClientID : [],
-                DNIS: selectedDNIS ? selectedDNIS : [],
-              })
-            );
-          });
-        });
-        await insertUserInfo({
-          UserName: fetchedUserName.userName,
-          //loginDate: new Date(),
-          activityData: {
-            dateRange: dateRange,
-            filter: {
-              queues: selectedQueue ? selectedQueue : [],
-              marketSector: selectedMarketSector ? selectedMarketSector : [],
-              participantType: selectedParticipant ? selectedParticipant : [],
-              lob: selectedLOB ? selectedLOB : [],
-              ClientID: selectedClientID ? selectedClientID : [],
-              DNIS: selectedDNIS ? selectedDNIS : [],
-              selectedTopics: "default Top 25 Topics",
-            },
-            currentDate: null,
-            currentTopic: null,
-            topicCount: null,
-            phrasesCount: null,
-            topicDownload: {
-              buttonClick: false,
-              topicSelected: null,
-            },
-            phraseDownload: {
-              buttonClick: false,
-              phrasesSelected: null,
-            },
-          },
-        });
       }
-
-      const responseAllTopics = await getAllTopics({
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-      });
-      //console.log(responseAllTopics, 'ALL TOPICS')
-
-      let allTopicsData = responseAllTopics.rows;
-
-      const transformedArray = allTopicsData.map((item) => {
-        return { name: item[0] };
-      });
-
-      setAllTopics(transformedArray);
-      // storing in redux
+       else {
+       
+      }
     }
   };
 
@@ -882,219 +695,7 @@ const PopupDoc = () => {
       DNIS: selectedDNIS ? selectedDNIS : [],
     };
 
-    if (selectedTopics.length > 0) {
-      const topicInOrderResponse = await getSelectedTopicsInOrder({
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-        queues: selectedQueue ? selectedQueue : [],
-        marketSector: selectedMarketSector ? selectedMarketSector : [],
-        participantType: selectedParticipant ? selectedParticipant : [],
-        lob: selectedLOB ? selectedLOB : [],
-        ClientID: selectedClientID ? selectedClientID : [],
-        DNIS: selectedDNIS ? selectedDNIS : [],
-        selectedTopics: selectedTopics ? selectedTopics : [],
-      });
 
-      //console.log(topicInOrderResponse.rows, 'selected topic in order');
-
-      const topicsInDescentingOrder = topicInOrderResponse.rows;
-      const uniqName = topicsInDescentingOrder.map((item) => item[0]);
-
-      let resArray = [];
-
-      selectedTopics.map((k) => {
-        getTopics({
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-          queues: selectedQueue ? selectedQueue : [],
-          marketSector: selectedMarketSector ? selectedMarketSector : [],
-          participantType: selectedParticipant ? selectedParticipant : [],
-          lob: selectedLOB ? selectedLOB : [],
-          ClientID: selectedClientID ? selectedClientID : [],
-          DNIS: selectedDNIS ? selectedDNIS : [],
-          topicName: k.name,
-        }).then((response) => {
-          //console.log('API New Res', response);
-          let x = [response.rows].flat();
-          //console.log('....xxxxxxx', ...x, x);
-
-          // setResponseArray(prevData => [...prevData, ...x]);
-          resArray.push(...x);
-          //console.log(response, 'API response1234 Use effect', x, responseArray, k[0])
-
-          const stDate = new Date(dateRange.startDate);
-          const edDate = new Date(dateRange.endDate);
-
-          // const uniqName = getUniqniqueNames(resArray);
-          const result = getDataForDateRange(
-            uniqName,
-            resArray,
-            stDate,
-            edDate
-          );
-
-          //console.log('useEffect historical prem', result, uniqName)
-
-          let fetchData = createGraphData(result);
-          //console.log(fetchData, 'historical fetchData')
-
-          dispatch(setFetchedData(fetchData));
-          dispatch(setOriginalFetchedData(resArray));
-          dispatch(
-            setFilters({
-              queues: selectedQueue ? selectedQueue : [],
-              marketSector: selectedMarketSector ? selectedMarketSector : [],
-              participantType: selectedParticipant ? selectedParticipant : [],
-              lob: selectedLOB ? selectedLOB : [],
-              ClientID: selectedClientID ? selectedClientID : [],
-              DNIS: selectedDNIS ? selectedDNIS : [],
-            })
-          );
-        });
-      });
-
-      if (fetchedUserName.userName != null) {
-        await insertUserInfo({
-          UserName: fetchedUserName.userName,
-          loginDate: new Date(),
-          activityData: {
-            dateRange: dateRange,
-            filter: {
-              queues: selectedQueue ? selectedQueue : [],
-              marketSector: selectedMarketSector ? selectedMarketSector : [],
-              participantType: selectedParticipant ? selectedParticipant : [],
-              lob: selectedLOB ? selectedLOB : [],
-              ClientID: selectedClientID ? selectedClientID : [],
-              DNIS: selectedDNIS ? selectedDNIS : [],
-              selectedTopics: selectedTopics ? selectedTopics : [],
-            },
-            currentDate: null,
-            currentTopic: null,
-            topicCount: null,
-            phrasesCount: null,
-            topicDownload: {
-              buttonClick: false,
-              topicSelected: null,
-            },
-            phraseDownload: {
-              buttonClick: false,
-              phrasesSelected: null,
-            },
-          },
-        });
-      }
-    } else {
-      const highestTopicNamesResponse = await getTopTopics(data1);
-
-      let highestTopicNames = highestTopicNamesResponse.rows;
-
-      const transformedAlltopics = highestTopicNames.map((item) => {
-        return { name: item[0] };
-      });
-
-      const uniqName = highestTopicNames.map((item) => item[0]);
-
-      setSelectedTopic(transformedAlltopics);
-      dispatch(setSelectedTopics(transformedAlltopics));
-
-      setResponseArray([]);
-      let resArray = [];
-
-      highestTopicNames.map((k) => {
-        getTopics({
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-          queues: selectedQueue ? selectedQueue : [],
-          marketSector: selectedMarketSector ? selectedMarketSector : [],
-          participantType: selectedParticipant ? selectedParticipant : [],
-          lob: selectedLOB ? selectedLOB : [],
-          ClientID: selectedClientID ? selectedClientID : [],
-          DNIS: selectedDNIS ? selectedDNIS : [],
-          topicName: k[0],
-        }).then((response) => {
-          console.log("API New Res", response);
-          let x = [response.rows].flat();
-          console.log("....xxxxxxx", ...x, x);
-
-          // setResponseArray(prevData => [...prevData, ...x]);
-          resArray.push(...x);
-          //console.log(response, 'API response1234 Use effect', x, responseArray, k[0])
-
-          const stDate = new Date(dateRange.startDate);
-          const edDate = new Date(dateRange.endDate);
-
-          // const uniqName = getUniqniqueNames(resArray);
-          const result = getDataForDateRange(
-            uniqName,
-            resArray,
-            stDate,
-            edDate
-          );
-
-          console.log("useEffect historical prem", result, uniqName);
-
-          let fetchData = createGraphData(result);
-          console.log(fetchData, "historical fetchData");
-
-          dispatch(setFetchedData(fetchData));
-          dispatch(setOriginalFetchedData(resArray));
-          dispatch(
-            setFilters({
-              queues: selectedQueue ? selectedQueue : [],
-              marketSector: selectedMarketSector ? selectedMarketSector : [],
-              participantType: selectedParticipant ? selectedParticipant : [],
-              lob: selectedLOB ? selectedLOB : [],
-              ClientID: selectedClientID ? selectedClientID : [],
-              DNIS: selectedDNIS ? selectedDNIS : [],
-            })
-          );
-        });
-      });
-      if (fetchedUserName.userName != null) {
-        await insertUserInfo({
-          UserName: fetchedUserName.userName,
-          loginDate: new Date(),
-          activityData: {
-            dateRange: dateRange,
-            filter: {
-              queues: selectedQueue ? selectedQueue : [],
-              marketSector: selectedMarketSector ? selectedMarketSector : [],
-              participantType: selectedParticipant ? selectedParticipant : [],
-              lob: selectedLOB ? selectedLOB : [],
-              ClientID: selectedClientID ? selectedClientID : [],
-              DNIS: selectedDNIS ? selectedDNIS : [],
-              selectedTopics: "default Top 25 Topics",
-            },
-            currentDate: null,
-            currentTopic: null,
-            topicCount: null,
-            phrasesCount: null,
-            topicDownload: {
-              buttonClick: false,
-              topicSelected: null,
-            },
-            phraseDownload: {
-              buttonClick: false,
-              phrasesSelected: null,
-            },
-          },
-        });
-      }
-    }
-
-    const responseAllTopics = await getAllTopics({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-    });
-    console.log(responseAllTopics, "ALL TOPICS");
-
-    let allTopicsData = responseAllTopics.rows;
-
-    const transformedArray = allTopicsData.map((item) => {
-      return { name: item[0] };
-    });
-
-    setAllTopics(transformedArray);
 
     // fetch available LOBS on selected daterange
     const responseLOb = await getLOB({
@@ -1125,14 +726,6 @@ const PopupDoc = () => {
   // console.log(fetchedData, 'fetched data from rfdux')
   const createGraphData = (result) => {
     console.log("inside createGraph Data", result);
-    // const lightColors = [
-    //     "#fbbf24","#f97316", "#f43f5e", "#e879f9", "#c026d3","#86198f",
-    // "#9AC1A6","#9ca3af","#ea580c", "#d97706","#ec4899", "#f9a8d4",
-    // "#6b7280","#a5f3fc","#4a044e","#db2777","#fbcfe8","#f5d0fe",
-    // "#fef08a","#22d3ee", "#818cf8","#3f3f46","#0d9488","#fafafa"
-
-    //  ];
-
     const lightColors = [
       "#ff9442",
       "#F8BBD0",
