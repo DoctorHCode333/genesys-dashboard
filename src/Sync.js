@@ -200,4 +200,53 @@ const DownloadView = (props) => {
 };
 
 export default DownloadView;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+
+
+
+import React, { useState } from 'react';
+import { TabView, TabPanel } from 'primereact/tabview';
+import SummaryPage from './SummaryPage';
+import TopicsPage from './TopicsPage';
+import { useEffect } from 'react';
+
+const DownloadTabView = (props) =>{
+    const [scrollableTabs, setScrollableTabs ] = useState([])
+
+    let propsData = props.finalData;
+
+   useEffect(() => {
+    setScrollableTabs((prevData) => [...prevData,  {title : 'Summary', content: <SummaryPage data={props.rowData}/>}])
+    propsData.map((item) =>{
+        setScrollableTabs((prevData) => [...prevData, {title: item.name, content: <TopicsPage data={item.data} />}])
+    })
+
+   }, [])
+
+    console.log(props.rowData, props.finalData, 'inisde tab view download', scrollableTabs)
+    // const scrollableTabs = Array.from({ length: 50 }, (_, i) => ({ title: `Tab ${i + 1}`, content: `Tab ${i + 1} Content` }))
+{/* <button className='px-10 py-2 bg-gray-300 hover:bg-gray-300 text-gray-700 font-semibold rounded-md'>{tab.title}</button> */}
+    return (
+        <div className='card' >
+            <TabView scrollable>
+                {scrollableTabs.map((tab) => {
+                    return (
+                        <TabPanel key={tab.title} header={tab.title} >
+                            <hr/>
+                            <br/>
+                            <p className="m-0">{tab.content}</p>
+                        </TabPanel>
+                    );
+                })}
+            </TabView>
+        </div>
+
+    )
+}
+
+
+export default DownloadTabView;
+        
