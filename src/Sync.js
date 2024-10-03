@@ -203,51 +203,47 @@ export default DownloadView;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TabView, TabPanel } from 'primereact/tabview';
 import SummaryPage from './SummaryPage';
 import TopicsPage from './TopicsPage';
-import { useEffect } from 'react';
 
-const DownloadTabView = (props) =>{
-    const [scrollableTabs, setScrollableTabs ] = useState([])
-    const {downloadData} = props
-    let propsData = downloadData.downloadData;
-    console.log(downloadData.summaryData, propsData, 'inisde tab view download', scrollableTabs)
-   useEffect(() => {
-    if (Object.keys(downloadData).length !== 0) {
-    setScrollableTabs((prevData) => [...prevData,  {title : 'Summary', content: <SummaryPage data={downloadData.summaryData}/>}])
-    setScrollableTabs((prevData) => [...prevData,  {title : 'Positive Feedback', content: <TopicsPage data={propsData.positiveFeedback}/>}])
-    setScrollableTabs((prevData) => [...prevData,  {title : 'Negative Feedback', content: <TopicsPage data={propsData.negativeFeedback}/>}])
-    // propsData.map((item) =>{
-    //     setScrollableTabs((prevData) => [...prevData, {title: item.name, content: <TopicsPage data={item.data} />}])
-    // })
-    }
-   }, [])
-
+const DownloadTabView = (props) => {
+    const [scrollableTabs, setScrollableTabs] = useState([]);
+    const { downloadData } = props;
     
-    // const scrollableTabs = Array.from({ length: 50 }, (_, i) => ({ title: `Tab ${i + 1}`, content: `Tab ${i + 1} Content` }))
-{/* <button className='px-10 py-2 bg-gray-300 hover:bg-gray-300 text-gray-700 font-semibold rounded-md'>{tab.title}</button> */}
+    // Extracting the feedback data from props
+    const propsData = downloadData?.downloadData;
+
+    // Log for debugging
+    console.log(downloadData?.summaryData, propsData, 'inside tab view download', scrollableTabs);
+
+    useEffect(() => {
+        if (Object.keys(downloadData).length !== 0) {
+            // Prepare the tabs in one go
+            const newTabs = [
+                { title: 'Summary', content: <SummaryPage data={downloadData.summaryData} /> },
+                { title: 'Positive Feedback', content: <TopicsPage data={propsData.positiveFeedback} /> },
+                { title: 'Negative Feedback', content: <TopicsPage data={propsData.negativeFeedback} /> },
+            ];
+            // Set the tabs state in a single state update
+            setScrollableTabs(newTabs);
+        }
+    }, [downloadData]);
+
     return (
-        <div className='card' >
+        <div className="card">
             <TabView scrollable>
-                {scrollableTabs.map((tab) => {
-                    return (
-                        <TabPanel key={tab.title} header={tab.title} >
-                            <hr/>
-                            <br/>
-                            <p className="m-0">{tab.content}</p>
-                        </TabPanel>
-                    );
-                })}
+                {scrollableTabs.map((tab, index) => (
+                    <TabPanel key={index} header={tab.title}>
+                        <hr />
+                        <br />
+                        <p className="m-0">{tab.content}</p>
+                    </TabPanel>
+                ))}
             </TabView>
         </div>
-
-    )
-}
-
+    );
+};
 
 export default DownloadTabView;
