@@ -11,22 +11,18 @@ import { getBotFeedbackDownlaodData } from "../../API/TopicAPI";
 
 const DownloadView = (props) => {
   const [visible, setVisible] = useState(false);
-  const { trendData, downloadData, filters, setDownloadData, dateRange } =
-    props;
+  const { trendData, downloadData, filters, setDownloadData, dateRange } = props;
 
   const [loading, setLoading] = useState(false);
 
-  const [selectedCities, setSelectedCities] = useState(["All"]);
+  const [selectedDownloadOptions, setSelectedDownloadOptions] = useState(["All"]);
 
-  // getting what are the topics need to display on display preview
-  // const cities = fetchedReduxData.labels.map((item) => (
-  //     { name: item }
-  // ));
-  const [cities, setCities] = useState([
-    {label:"All", value: "All"},
-    {label:"Summary", value: "Summary"},
-    {label:"Positive Feedback", value: "Positive Feedback"},
-    {label:"Negative Feedback", value: "Negative Feedback"},
+  // Define the available download options
+  const [downloadOptions, setDownloadOptions] = useState([
+    { label: "All", value: "All" },
+    { label: "Summary", value: "Summary" },
+    { label: "Positive Feedback", value: "Positive Feedback" },
+    { label: "Negative Feedback", value: "Negative Feedback" },
   ]);
 
   const toast = useRef(null);
@@ -63,7 +59,7 @@ const DownloadView = (props) => {
       setLoading(false);
     }
   }, [downloadData]);
-  // Fetches the data and displays the dialog.
+
   const handleDownload = async () => {
     if (!dateRange.startDate || !dateRange.endDate) {
       toast.current.show({
@@ -96,39 +92,34 @@ const DownloadView = (props) => {
   };
 
   // This function generates the Excel file based on the downloadData state.
-  const generateExcel = (arr) => {
+  const generateExcel = (selectedOptions) => {
     try {
       const wb = XLSX.utils.book_new();
 
-      // Adding Summary Sheet
+      // Adding sheets conditionally based on selected options
       const summarySheet = XLSX.utils.json_to_sheet(downloadData.summaryData);
+      const positiveSheet = XLSX.utils.json_to_sheet(downloadData.downloadData.positiveFeedback);
+      const negativeSheet = XLSX.utils.json_to_sheet(downloadData.downloadData.negativeFeedback);
 
-      // Adding Positive Feedback Sheet
-      const positiveSheet = XLSX.utils.json_to_sheet(
-        downloadData.downloadData.positiveFeedback
-      );
-      // Adding Negative Feedback Sheet
-      const negativeSheet = XLSX.utils.json_to_sheet(
-        downloadData.downloadData.negativeFeedback
-      );
-
-      if ("All" in arr) {
+      if (selectedOptions.includes("All")) {
+        // If "All" is selected, include all sheets
         XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
         XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
         XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
       } else {
-        if ("Summary" in arr) {
+        // Otherwise, include only the selected sheets
+        if (selectedOptions.includes("Summary")) {
           XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
         }
-        if ("Positive Feedback" in arr) {
+        if (selectedOptions.includes("Positive Feedback")) {
           XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
         }
-        if ("Negative Feedback" in arr) {
+        if (selectedOptions.includes("Negative Feedback")) {
           XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
         }
       }
 
-      const fileName = `FeedbackData ${dateRange.startDate} to ${dateRange.endDate}.xlsx`;
+      const fileName = `FeedbackData_${dateRange.startDate}_to_${dateRange.endDate}.xlsx`;
       XLSX.writeFile(wb, fileName);
 
       showDownloadSuccessToast();
@@ -137,10 +128,13 @@ const DownloadView = (props) => {
     }
   };
 
-  const downloadExcelData = (arr) => {
-    //showExcelDownloadToast();
-
-    generateExcel(arr);
+  const downloadExcelData = () => {
+    if (selectedDownloadOptions.length === 0) {
+      showDownloadErrorToast(); // Prevent download if no option is selected
+      return;
+    }
+    showExcelDownloadToast(); // Show download toast
+    generateExcel(selectedDownloadOptions); // Generate Excel with selected options
   };
 
   return (
@@ -149,7 +143,7 @@ const DownloadView = (props) => {
         <Toast ref={toast} />
         <Button
           label="Download"
-          className=" mt-3 border mb-2 mr-2 text-white text-xs  font-semibold py-2 px-4 rounded-lg  "
+          className="mt-3 border mb-2 mr-2 text-white text-xs font-semibold py-2 px-4 rounded-lg"
           icon="pi pi-download"
           onClick={handleDownload}
         />
@@ -168,42 +162,33 @@ const DownloadView = (props) => {
                 <Loading />
               ) : (
                 <>
-                  <p className="mb-4 ">
+                  <p className="mb-4">
                     You can download the below data of Feedbacks from{" "}
                     <b>
-                      {" "}
                       {dateRange.startDate} to {dateRange.endDate}
                     </b>{" "}
-                    as excel format
-                    {/* <button
-                          icon="pi pi-download"
-                          className="px-2 py-1  text-black font-extrabold"
-                          onClick={downloadExcelData(cities)}
-                        >
-                          <i className="pi pi-download"></i>
-                        </button> */}
+                    as Excel format.
                   </p>
                   <div className="flex justify-start items-center text-xs mb-2 mt-4">
                     <MultiSelect
-                      value={selectedCities}
-                      onChange={(e) => setSelectedCities(e.value)}
-                      options={cities}
+                      value={selectedDownloadOptions}
+                      onChange={(e) => setSelectedDownloadOptions(e.value)}
+                      options={downloadOptions}
                       optionLabel="label"
                       filter
                       placeholder="Select File"
                       maxSelectedLabels={4}
-                      className="w-full mb-1 border md:w-60 "
+                      className="w-full mb-1 border md:w-60"
                     />
 
                     <Button
                       label="Download"
-                      className="ml-3 bg-blue-950  border mb-2 mr-2 text-white text-xs  font-semibold py-3 px-8 rounded-lg  "
-                      onClick={downloadExcelData(selectedCities)}
+                      className="ml-3 bg-blue-950 border mb-2 mr-2 text-white text-xs font-semibold py-3 px-8 rounded-lg"
+                      onClick={downloadExcelData} // Fix function call here
                     />
                   </div>
                   <hr />
                   <DownloadTabView {...props} />
-                  {/*rowData={rowData} finalData={finalData} */}
                 </>
               )}
             </Dialog>
@@ -215,3 +200,4 @@ const DownloadView = (props) => {
 };
 
 export default DownloadView;
+
