@@ -491,10 +491,15 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
 
   // Load the global filter options (i.e., what will be shown in dropdowns)
   useEffect(() => {
-    if (globalFilters) {
-      setLOB(globalFilters.lob || []);
+    if (globalFilters && Object.keys(globalFilters).length > 0) {
+      setLOB(globalFilters.lob || []); // Safely handle empty globalFilters
       setDeviceTypes(globalFilters.deviceType || []);
       setInteractionReasons(globalFilters.interactionReason || []);
+    } else {
+      // Handle empty globalFilters by setting dropdown options to empty
+      setLOB([]);
+      setDeviceTypes([]);
+      setInteractionReasons([]);
     }
   }, [globalFilters]);
 
@@ -529,9 +534,9 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
     const filterData = {
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
-      lob: selectedLOB ? selectedLOB : [],
-      deviceType: selectedDeviceType ? selectedDeviceType : [],
-      interactionReason: selectedInteractionReason ? selectedInteractionReason : [],
+      lob: selectedLOB.length > 0 ? selectedLOB : [],
+      deviceType: selectedDeviceType.length > 0 ? selectedDeviceType : [],
+      interactionReason: selectedInteractionReason.length > 0 ? selectedInteractionReason : [],
     };
 
     // Dispatch the selected filters to the Redux store
@@ -574,6 +579,7 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
           maxSelectedLabels={3}
           className="w-80 mt-1 mb-1"
           showSelectAll={false}
+          disabled={LOB.length === 0} // Disable if no options
         />
         <br />
 
@@ -588,6 +594,7 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
           maxSelectedLabels={3}
           className="w-80 mt-1 mb-1"
           showSelectAll={false}
+          disabled={deviceTypes.length === 0} // Disable if no options
         />
         <br />
 
@@ -602,6 +609,7 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
           maxSelectedLabels={3}
           className="w-80 mt-1 mb-1"
           showSelectAll={false}
+          disabled={interactionReasons.length === 0} // Disable if no options
         />
 
         <div className="w-full flex justify-between">
@@ -627,3 +635,4 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
 };
 
 export default PopupDoc;
+
