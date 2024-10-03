@@ -247,3 +247,6 @@ const DownloadTabView = (props) => {
 export default DownloadTabView;
 
 
+.p-tabview-nav li.p-highlight .p-tabview-title {
+    border-bottom: 2px solid #007ad9; /* Customize the color and thickness */
+}
