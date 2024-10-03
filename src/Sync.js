@@ -468,17 +468,20 @@ import { MultiSelect } from "primereact/multiselect";
 import { Toast } from "primereact/toast";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { useDispatch } from "react-redux";
-import { setFetchedData, setFilters } from "../Redux/actions";
+//import { setFetchedData, setFilters } from "../Redux/actions";
 
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import "./custom-style.css";
 
-const PopupDoc = ({ globalFilters, filters, dateRange }) => {
+const PopupDoc = (props) => {
+
   const toast = useRef(null);
   const op = useRef(null);
 
+  const { globalFilters, filters, dateRange , setFilters} = props
+  
   const [selectedLOB, setSelectedLOB] = useState([]);
   const [selectedDeviceType, setSelectedDeviceType] = useState([]);
   const [selectedInteractionReason, setSelectedInteractionReason] = useState([]);
@@ -491,10 +494,12 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
 
   // Load the global filter options (i.e., what will be shown in dropdowns)
   useEffect(() => {
-    if (globalFilters && Object.keys(globalFilters).length > 0) {
-      setLOB(globalFilters.lob || []); // Safely handle empty globalFilters
-      setDeviceTypes(globalFilters.deviceType || []);
-      setInteractionReasons(globalFilters.interactionReason || []);
+    if (globalFilters && globalFilters.lob.length > 0) {
+        console.log("INside", globalFilters.lob.length);
+        
+      setLOB(globalFilters.lob.map((array)=>array[0]) || []); // Safely handle empty globalFilters
+      setDeviceTypes(globalFilters.deviceType.map((array)=>array[0]) || []);
+      setInteractionReasons(globalFilters.interactionReason.map((array)=>array[0]) || []);
     } else {
       // Handle empty globalFilters by setting dropdown options to empty
       setLOB([]);
@@ -541,14 +546,17 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
 
     // Dispatch the selected filters to the Redux store
     dispatch(setFilters(filterData));
-    dispatch(setFetchedData([])); // Replace with the actual fetched data based on applied filters
+    //dispatch(setFetchedData([])); // Replace with the actual fetched data based on applied filters
   };
 
   // When user manually opens/closes the panel
   const onOverlayToggle = (e) => {
     op.current.toggle(e);
   };
+if(LOB.length>0 || deviceTypes.length>0 || interactionReasons.length>0){
 
+    console.log(LOB,deviceTypes);
+    
   return (
     <div className="card flex flex-column align-items-center w-sm">
       <Toast ref={toast} />
@@ -633,6 +641,8 @@ const PopupDoc = ({ globalFilters, filters, dateRange }) => {
     </div>
   );
 };
-
+}
 export default PopupDoc;
+
+
 
