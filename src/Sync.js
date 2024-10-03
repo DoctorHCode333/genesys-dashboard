@@ -462,429 +462,109 @@ app.post("/bot-feedback-downloadData", async (req, res) => {
     }
 });
 //////////////////////////////////////////////////////////////
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Button } from "primereact/button";
-import { Menu } from "primereact/menu";
 import { MultiSelect } from "primereact/multiselect";
 import { Toast } from "primereact/toast";
 import { OverlayPanel } from "primereact/overlaypanel";
+import { useDispatch, useSelector } from "react-redux";
+import { getDeviceType, getLOB, getInteractionReason } from "../API/TopicAPI";
+import { setFetchedData, setFilters } from "../Redux/actions";
 
-import "primereact/resources/themes/lara-light-indigo/theme.css"; //theme
-import "primereact/resources/primereact.min.css"; //core css
-import "primeicons/primeicons.css"; //icons
-import { data } from "autoprefixer";
-
-import {
-  setDateRange,
-  setFetchedData,
-  setFilters,
-  setOriginalFetchedData,
-  setSelectedTopics,
-} from "../Redux/actions";
-import { connect, useDispatch, useSelector } from "react-redux";
-import {
-  getAllTopics,//not needed
-  getClientId,//not needed
-  getDnis,//not needed
-  getDeviceType,//add new
-  getLOB,//refine
-  getInteractionReason,//add new
-  getMarketType,//not needed
-  getParticipantType,//not needed
-  getQueue,//not needed
-  getSelectedTopicsInOrder,//not needed
-  getTopics,//not needed
-  getTopTopics,//not needed
-  insertUserInfo,//not needed
-} from "../API/TopicAPI";
-
-import { light } from "@mui/material/styles/createPalette";
-// import DynamicDemo from './Messages/DynamicDemo';
-import { useEffect } from "react";
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 import "./custom-style.css";
 
 const PopupDoc = () => {
   const [responseArray, setResponseArray] = useState([]);
-
-  const [visible, setVisible] = useState(false);
-  const menu = useRef(null);
   const toast = useRef(null);
   const op = useRef(null);
 
-  const toast1 = useRef(null);
+  const [selectedLOB, setSelectedLOB] = useState(null);
+  const [selectedDeviceType, setSelectedDeviceType] = useState(null);
+  const [selectedInteractionReason, setSelectedInteractionReason] = useState(null);
 
-  const show = () => {
-    toast.current.show({
-      severity: "error",
-      summary: "Invalid Date Range",
-      detail: "Please select a valid date range",
-    });
-  };
-
-  // const showServerError = () => {
-  //     toast.current.show({ severity: 'error', summary: 'Failed to fetch data from server', detail: 'Due to technical issue, please refresh the page' });
-  // };
+  const [LOB, setLOB] = useState([]);
+  const [deviceTypes, setDeviceTypes] = useState([]);
+  const [interactionReasons, setInteractionReasons] = useState([]);
 
   const fetchedFilters = useSelector((state) => state.fetchFilters);
   const dateRange = useSelector((state) => state.dateRange);
 
-  const fetchedUserName = useSelector((state) => state.fetchUserName);
-
-  const [selectedLOB, setSelectedLOB] = useState(null);
-  const [selectedMarketSector, setSelectedMarketSector] = useState(null);
-  const [selectedQueue, setSelectedQueue] = useState(null);
-  const [selectedClientID, setSelectedClientID] = useState(null);
-  const [selectedParticipant, setSelectedParticipant] = useState(null);
-  const [selectedDNIS, setSelectedDNIS] = useState(null);
-
-  const [allTopics, setAllTopics] = useState([]);
-  const [selectedTopics, setSelectedTopic] = useState([]);
-
-  const sortedItems = allTopics.sort((a, b) => {
-    const aSelected = selectedTopics.some((item) => item.name === a.name);
-    const bSelected = selectedTopics.some((item) => item.name === b.name);
-    return aSelected === bSelected ? 0 : aSelected ? -1 : 1;
-  });
-
-  // setting LOB and remianingf parameters
-  const [LOB, setLOB] = useState([]);
-  const [marketSector, setMarketSector] = useState([]);
-  const [queues, setQueues] = useState([]);
-  const [clientid, setClientId] = useState([]);
-  const [dnis, setDnis] = useState([]);
-  const [participant, setParticipant] = useState([]);
-
-  useEffect(() => {
-    setSelectedQueue(fetchedFilters.queues);
-    setSelectedMarketSector(fetchedFilters.marketSector);
-    setSelectedClientID(fetchedFilters.ClientID);
-    setSelectedParticipant(fetchedFilters.participantType);
-    setSelectedDNIS(fetchedFilters.DNIS);
-    setSelectedLOB(fetchedFilters.lob);
-  }, [fetchedFilters]);
-
-  // console.log(selectedClientID, 'selected clientid')
-
-  const formatDate = (dateString) => {
-    // const date = new Date(dateString);
-    // const options = { day: '2-digit', month: 'short', year: '2-digit'};
-    // return date.toLocaleDateString('en-US', options);
-    let dateObject = new Date(dateString);
-    dateObject.setDate(dateObject.getDate() + 1);
-    let endDate = dateObject.toISOString().split("T")[0];
-
-    var date = new Date(endDate);
-    var options = { day: "numeric", month: "short", year: "numeric" };
-    var formatter = new Intl.DateTimeFormat("en-US", options);
-    return formatter.format(date);
-  };
-
-  const clearSelections = () => {
-    setSelectedClientID(null);
-    setSelectedDNIS(null);
-    setSelectedLOB(null);
-    setSelectedMarketSector(null);
-    setSelectedParticipant(null);
-    setSelectedQueue(null);
-    setSelectedTopic([]);
-  };
-
-  const fetchedReduxData = useSelector((state) => state.fetchedData);
-  //console.log(fetchedReduxData, 'fethed data data inisde poup')
-
   const dispatch = useDispatch();
 
-  // fetch unique names from the result of api
-  const getUniqniqueNames = (data) => {
-    //console.log('inside unique names', data)
-    const uniqName = new Set();
-    data.forEach((item) => uniqName.add(item[0]));
-    return Array.from(uniqName);
+  useEffect(() => {
+    // Set the selected filters from fetched filters (Redux), but no automatic refetch here
+    setSelectedLOB(fetchedFilters.lob);
+    setSelectedDeviceType(fetchedFilters.deviceType);
+    setSelectedInteractionReason(fetchedFilters.interactionReason);
+  }, [fetchedFilters]);
+
+  // Function to clear all filter selections
+  const clearSelections = () => {
+    setSelectedLOB(null);
+    setSelectedDeviceType(null);
+    setSelectedInteractionReason(null);
   };
 
-  // Function to get data for each name for the given date range
-  const getDataForDateRange = (names, data, startDate, endDate) => {
-    const result = [];
-    names.forEach((name) => {
-      const nameData = data.filter((item) => item[0] === name);
-      const nameDataMap = new Map(nameData.map((item) => [item[1], item[2]]));
-      const currentDate = new Date(startDate);
-      while (currentDate <= endDate) {
-        const dateString = currentDate.toISOString().slice(0, 10);
-        const value = nameDataMap.has(dateString)
-          ? nameDataMap.get(dateString)
-          : 0;
-        result.push([name, dateString, value]);
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-    });
-    return result;
-  };
-
-  const onHide = () => {
-    setVisible(false);
-  };
-
-  const applySelections = async (e) => {
-    op.current.toggle(e);
-
-    if (dateRange.startDate == null || dateRange.endDate == null) {
-      //console.log('please select date');
-
-      show();
-    } 
-    else {
-      const data1 = {
+  // Function to apply selections when a user explicitly sets filters and date range
+  const applySelections = async () => {
+    if (!dateRange.startDate || !dateRange.endDate) {
+      // Show error if date range is not selected
+      toast.current.show({
+        severity: "error",
+        summary: "Invalid Date Range",
+        detail: "Please select a valid date range",
+      });
+    } else {
+      const filterData = {
         startDate: dateRange.startDate,
         endDate: dateRange.endDate,
-        queues: selectedQueue ? selectedQueue : [],
-        marketSector: selectedMarketSector ? selectedMarketSector : [],
-        participantType: selectedParticipant ? selectedParticipant : [],
         lob: selectedLOB ? selectedLOB : [],
-        ClientID: selectedClientID ? selectedClientID : [],
-        DNIS: selectedDNIS ? selectedDNIS : [],
+        deviceType: selectedDeviceType ? selectedDeviceType : [],
+        interactionReason: selectedInteractionReason ? selectedInteractionReason : [],
       };
 
-      // console.log(selectedTopics.length, 'length of selectedTopics')
-
-      if (selectedTopics.length >= 1) {
-        await insertUserInfo({
-          UserName: fetchedUserName.userName,
-          loginDate: new Date(),
-          activityData: {
-            dateRange: dateRange,
-            filter: {
-              queues: selectedQueue ? selectedQueue : [],
-              marketSector: selectedMarketSector ? selectedMarketSector : [],
-              participantType: selectedParticipant ? selectedParticipant : [],
-              lob: selectedLOB ? selectedLOB : [],
-              ClientID: selectedClientID ? selectedClientID : [],
-              DNIS: selectedDNIS ? selectedDNIS : [],
-              selectedTopics: selectedTopics ? selectedTopics : [],
-            },
-            currentDate: null,
-            currentTopic: null,
-            topicCount: null,
-            phrasesCount: null,
-            topicDownload: {
-              buttonClick: false,
-              topicSelected: null,
-            },
-            phraseDownload: {
-              buttonClick: false,
-              phrasesSelected: null,
-            },
-          },
-        });
-      }
-       else {
-       
-      }
+      // Dispatch the filter data to Redux
+      dispatch(setFilters(filterData));
+      dispatch(setFetchedData([])); // Replace with the correct fetched data
     }
   };
 
+  // Function to fetch filter options (LOB, deviceType, interactionReason) without reapplying selections
   const applySelectionsWithout = async () => {
-    const data1 = {
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      queues: selectedQueue ? selectedQueue : [],
-      marketSector: selectedMarketSector ? selectedMarketSector : [],
-      participantType: selectedParticipant ? selectedParticipant : [],
-      lob: selectedLOB ? selectedLOB : [],
-      ClientID: selectedClientID ? selectedClientID : [],
-      DNIS: selectedDNIS ? selectedDNIS : [],
-    };
-
-
-
-    // fetch available LOBS on selected daterange
-    const responseLOb = await getLOB({
+    // Fetch LOB
+    const responseLOB = await getLOB({
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
     });
-    let fetchedLOB = responseLOb.rows;
+    const fetchedLOB = responseLOB.rows.map((item) => ({ name: item[0] }));
+    setLOB(fetchedLOB);
 
-    const transformedLOB = fetchedLOB.map((item) => {
-      return { name: item[0] };
-    });
-    setLOB(transformedLOB);
-
-    const responseMT = await getMarketType({
+    // Fetch Device Types
+    const responseDeviceType = await getDeviceType({
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
     });
-    let fetchedMT = responseMT.rows;
+    const fetchedDeviceTypes = responseDeviceType.rows.map((item) => ({ name: item[0] }));
+    setDeviceTypes(fetchedDeviceTypes);
 
-    const transformedMT = fetchedMT.map((item) => {
-      return { name: item[0] };
+    // Fetch Interaction Reasons
+    const responseInteractionReason = await getInteractionReason({
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
     });
-
-    setMarketSector(transformedMT);
-  };
-  const documentStyle = getComputedStyle(document.documentElement);
-
-  // console.log(fetchedData, 'fetched data from rfdux')
-  const createGraphData = (result) => {
-    console.log("inside createGraph Data", result);
-    const lightColors = [
-      "#ff9442",
-      "#F8BBD0",
-      "#AB47BC",
-      "#E1BEE7",
-      "#880E4F",
-      "#EF6C00",
-      "#388E3C",
-      "#D0845B",
-      "#F9A825",
-      "#33691E",
-      "#827717",
-      "#00ACC1",
-      "#90CAF9",
-      "#FFC107",
-      "#C5CAE9",
-      "#000000",
-      "#B39DDB",
-      "#FFCC80",
-      "#455A64",
-      "#B0BEC5",
-      "#d93d90",
-      "#8DAED5",
-      "#5b8591",
-      "#455A6",
-      "#59178c",
-    ];
-
-    let graphData = {
-      labels: [],
-      datasets: [],
-    };
-    let i = 0;
-
-    result.forEach((row, index) => {
-      const topicname = row[0];
-      const date = formatDate(row[1]);
-      const count = row[2];
-
-      const topicIndex = graphData.datasets.findIndex(
-        (dataset) => dataset.label == topicname
-      );
-      // console.log(topicIndex,'tpindex', graphData,'gdata', topicname)
-
-      if (topicIndex == -1) {
-        graphData.datasets.push({
-          label: topicname,
-          data: [count],
-          fill: false,
-          borderColor: lightColors[i],
-          tension: 0.4,
-          borderWidth: 4,
-        });
-        console.log(
-          lightColors[i],
-          "color",
-          i,
-          index,
-          "----",
-          lightColors[index]
-        );
-        ++i;
-      } else {
-        // graphData.datasets[topicname].data.push(count);
-
-        if (!graphData.datasets[topicIndex].data) {
-          graphData.datasets[topicIndex].data = [];
-        }
-        graphData.datasets[topicIndex].data.push(count);
-      }
-      if (!graphData.labels.includes(date)) {
-        graphData.labels.push(date);
-      }
-    });
-    // console.log(graphData, 'graphdata');
-    return graphData;
+    const fetchedInteractionReasons = responseInteractionReason.rows.map((item) => ({ name: item[0] }));
+    setInteractionReasons(fetchedInteractionReasons);
   };
 
-  const callF = async () => {
-    await applySelectionsWithout();
-    // const responseAllTopics = await getAllTopics();
-    // console.log(responseAllTopics, 'ALL TOPICS')
-  };
-
-  useEffect(
-    () => {
-      callF();
-    },
-    [dateRange],
-    [fetchedFilters]
-  );
-
-  const fetchQueues = async () => {
-    const responseQueue = await getQueue({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      lob: selectedLOB,
-      marketSector: selectedMarketSector,
-    });
-    let fetchedQueue = responseQueue.rows;
-
-    const transformedQueue = fetchedQueue.map((item) => {
-      return { name: item[0] };
-    });
-    setQueues(transformedQueue);
- 
-    const responseClientID = await getClientId({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      lob: selectedLOB,
-      marketSector: selectedMarketSector,
-    });
-    let fetchedClientId = responseClientID.rows;
-
-    const transformedClientId = fetchedClientId.map((item) => {
-      return { name: item[0] };
-    });
-    setClientId(transformedClientId);
-    //console.log(transformedClientId, 'transformedClientIds')
-
-    // dnis
-    const responseDnis = await getDnis({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      lob: selectedLOB,
-      marketSector: selectedMarketSector,
-    });
-    let fetchedDnis = responseDnis.rows;
-
-    const transformedDnis = fetchedDnis.map((item) => {
-      return { name: item[0] };
-    });
-    setDnis(transformedDnis);
-    // console.log(transformedDnis, 'transformedDnis')
-
-    // participant
-    const responseParticipant = await getParticipantType({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-      lob: selectedLOB,
-      marketSector: selectedMarketSector,
-    });
-    let fetchedParticipant = responseParticipant.rows;
-
-    const transformedParticipant = fetchedParticipant.map((item) => {
-      return { name: item[0] };
-    });
-    setParticipant(transformedParticipant);
-    //console.log(transformedParticipant, 'transformedParticipant')
-  };
-
+  // useEffect to trigger applySelections when the dateRange changes
   useEffect(() => {
-    setSelectedQueue([]);
-    setSelectedClientID([]);
-    setSelectedDNIS([]);
-    setSelectedParticipant([]);
-    fetchQueues();
-  }, [selectedLOB, selectedMarketSector]);
+    applySelections(); // Apply selections automatically on dateRange change
+  }, [dateRange]);
 
+  // Function to handle OverlayPanel toggle and display filter options
   return (
     <div className="card flex flex-column align-items-center w-sm">
       <Toast ref={toast} />
@@ -902,58 +582,46 @@ const PopupDoc = () => {
         dismissable={false}
         className="mr-5"
       >
-        <div className="flex justify-end pb-1 ">
+        <div className="flex justify-end pb-1">
           <Button type="button" onClick={(e) => op.current.toggle(e)}>
             Close
           </Button>
         </div>
         <MultiSelect
           value={selectedLOB}
-          onChange={(e) => setSelectedLOB((prevState) => e.value)}
+          onChange={(e) => setSelectedLOB(e.value)}
           options={LOB}
           optionLabel="name"
           filter
           placeholder="LOB"
           maxSelectedLabels={3}
-          className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+          className="w-80 mt-1 mb-1"
           showSelectAll={false}
-          // disabled
         />
         <br />
 
         <MultiSelect
-          value={selectedMarketSector}
-          onChange={(e) => setSelectedMarketSector((prevState) => e.value)}
-          options={marketSector}
-          optionLabel="name"
-          filter
-          placeholder="Market Sector"
-          maxSelectedLabels={3}
-          className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
-          showSelectAll={false}
-        />
-        <br />
-        <MultiSelect
-          value={selectedQueue}
-          onChange={(e) => setSelectedQueue((prevState) => e.value)}
-          options={queues}
+          value={selectedDeviceType}
+          onChange={(e) => setSelectedDeviceType(e.value)}
+          options={deviceTypes}
           optionLabel="name"
           filter
           placeholder="Device Type"
           maxSelectedLabels={3}
-          className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+          className="w-80 mt-1 mb-1"
           showSelectAll={false}
         />
         <br />
+
         <MultiSelect
-          value={selectedParticipant}
-          onChange={(e) => setSelectedParticipant((prevState) => e.value)}
-          options={participant}
+          value={selectedInteractionReason}
+          onChange={(e) => setSelectedInteractionReason(e.value)}
+          options={interactionReasons}
           optionLabel="name"
           filter
           placeholder="Interaction Reason"
           maxSelectedLabels={3}
-          className="w-80 mt-1 mb-1 font-semibold text-lg border md:64 text-orange-500 bg-gray-200"
+          className="w-80 mt-1 mb-1"
           showSelectAll={false}
         />
 
@@ -967,7 +635,7 @@ const PopupDoc = () => {
 
           <Button
             label="Apply"
-            onClick={applySelections}
+            onClick={() => applySelections()} // Manually apply selections if user wants
             className="w-80 p-button-primary bg-fuchsia-700 mr-5 mt-3 text-white"
             style={{ width: "100px" }}
           />
@@ -977,8 +645,5 @@ const PopupDoc = () => {
   );
 };
 
-const mapStateToProps = (state) => ({
-  dateRange: state.dateRange,
-});
+export default PopupDoc;
 
-export default connect(mapStateToProps)(PopupDoc);
