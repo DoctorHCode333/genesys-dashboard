@@ -93,3 +93,41 @@ const generateExcel = async(summaryData, conversationData) => {
         XLSX.writeFile(wb, fileName);
         console.log('successfuly donloaded')
       };
+
+
+
+ const generateExcel = (selectedOptions) => {
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // Adding sheets conditionally based on selected options
+      const summarySheet = XLSX.utils.json_to_sheet(downloadData.summaryData);
+      const positiveSheet = XLSX.utils.json_to_sheet(downloadData.downloadData.positiveFeedback);
+      const negativeSheet = XLSX.utils.json_to_sheet(downloadData.downloadData.negativeFeedback);
+
+      if (selectedOptions.includes("All")) {
+        // If "All" is selected, include all sheets
+        XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+        XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+        XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+      } else {
+        // Otherwise, include only the selected sheets
+        if (selectedOptions.includes("Summary")) {
+          XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+        }
+        if (selectedOptions.includes("Positive Feedback")) {
+          XLSX.utils.book_append_sheet(wb, positiveSheet, "Positive Feedback");
+        }
+        if (selectedOptions.includes("Negative Feedback")) {
+          XLSX.utils.book_append_sheet(wb, negativeSheet, "Negative Feedback");
+        }
+      }
+
+      const fileName = `FeedbackData_${dateRange.startDate}_to_${dateRange.endDate}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      showDownloadSuccessToast();
+    } catch (error) {
+      showDownloadErrorToast();
+    }
+  };
