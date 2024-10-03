@@ -467,8 +467,7 @@ import { Button } from "primereact/button";
 import { MultiSelect } from "primereact/multiselect";
 import { Toast } from "primereact/toast";
 import { OverlayPanel } from "primereact/overlaypanel";
-import { useDispatch, useSelector } from "react-redux";
-import { getDeviceType, getLOB, getInteractionReason } from "../API/TopicAPI";
+import { useDispatch } from "react-redux";
 import { setFetchedData, setFilters } from "../Redux/actions";
 
 import "primereact/resources/themes/lara-light-indigo/theme.css";
@@ -476,40 +475,47 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import "./custom-style.css";
 
-const PopupDoc = () => {
-  const [responseArray, setResponseArray] = useState([]);
+const PopupDoc = ({ globalFilters, filters, dateRange }) => {
   const toast = useRef(null);
   const op = useRef(null);
 
-  const [selectedLOB, setSelectedLOB] = useState(null);
-  const [selectedDeviceType, setSelectedDeviceType] = useState(null);
-  const [selectedInteractionReason, setSelectedInteractionReason] = useState(null);
+  const [selectedLOB, setSelectedLOB] = useState([]);
+  const [selectedDeviceType, setSelectedDeviceType] = useState([]);
+  const [selectedInteractionReason, setSelectedInteractionReason] = useState([]);
 
   const [LOB, setLOB] = useState([]);
   const [deviceTypes, setDeviceTypes] = useState([]);
   const [interactionReasons, setInteractionReasons] = useState([]);
 
-  const fetchedFilters = useSelector((state) => state.fetchFilters);
-  const dateRange = useSelector((state) => state.dateRange);
-
   const dispatch = useDispatch();
 
+  // Load the global filter options (i.e., what will be shown in dropdowns)
   useEffect(() => {
-    // Set the selected filters from fetched filters (Redux), but no automatic refetch here
-    setSelectedLOB(fetchedFilters.lob);
-    setSelectedDeviceType(fetchedFilters.deviceType);
-    setSelectedInteractionReason(fetchedFilters.interactionReason);
-  }, [fetchedFilters]);
+    if (globalFilters) {
+      setLOB(globalFilters.lob || []);
+      setDeviceTypes(globalFilters.deviceType || []);
+      setInteractionReasons(globalFilters.interactionReason || []);
+    }
+  }, [globalFilters]);
 
-  // Function to clear all filter selections
+  // Function to clear all user-selected filter selections
   const clearSelections = () => {
-    setSelectedLOB(null);
-    setSelectedDeviceType(null);
-    setSelectedInteractionReason(null);
+    setSelectedLOB([]);
+    setSelectedDeviceType([]);
+    setSelectedInteractionReason([]);
+
+    // Reset filters state to empty arrays
+    dispatch(
+      setFilters({
+        lob: [],
+        deviceType: [],
+        interactionReason: [],
+      })
+    );
   };
 
-  // Function to apply selections when a user explicitly sets filters and date range
-  const applySelections = async () => {
+  // Function to apply user-selected filters and update Redux state
+  const applySelections = () => {
     if (!dateRange.startDate || !dateRange.endDate) {
       // Show error if date range is not selected
       toast.current.show({
@@ -517,62 +523,31 @@ const PopupDoc = () => {
         summary: "Invalid Date Range",
         detail: "Please select a valid date range",
       });
-    } else {
-      const filterData = {
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-        lob: selectedLOB ? selectedLOB : [],
-        deviceType: selectedDeviceType ? selectedDeviceType : [],
-        interactionReason: selectedInteractionReason ? selectedInteractionReason : [],
-      };
-
-      // Dispatch the filter data to Redux
-      dispatch(setFilters(filterData));
-      dispatch(setFetchedData([])); // Replace with the correct fetched data
+      return;
     }
+
+    const filterData = {
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+      lob: selectedLOB ? selectedLOB : [],
+      deviceType: selectedDeviceType ? selectedDeviceType : [],
+      interactionReason: selectedInteractionReason ? selectedInteractionReason : [],
+    };
+
+    // Dispatch the selected filters to the Redux store
+    dispatch(setFilters(filterData));
+    dispatch(setFetchedData([])); // Replace with the actual fetched data based on applied filters
   };
 
-  // Function to fetch filter options (LOB, deviceType, interactionReason) without reapplying selections
-  const applySelectionsWithout = async () => {
-    // Fetch LOB
-    const responseLOB = await getLOB({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-    });
-    const fetchedLOB = responseLOB.rows.map((item) => ({ name: item[0] }));
-    setLOB(fetchedLOB);
-
-    // Fetch Device Types
-    const responseDeviceType = await getDeviceType({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-    });
-    const fetchedDeviceTypes = responseDeviceType.rows.map((item) => ({ name: item[0] }));
-    setDeviceTypes(fetchedDeviceTypes);
-
-    // Fetch Interaction Reasons
-    const responseInteractionReason = await getInteractionReason({
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate,
-    });
-    const fetchedInteractionReasons = responseInteractionReason.rows.map((item) => ({ name: item[0] }));
-    setInteractionReasons(fetchedInteractionReasons);
+  // When user manually opens/closes the panel
+  const onOverlayToggle = (e) => {
+    op.current.toggle(e);
   };
 
-  // useEffect to trigger applySelections when the dateRange changes
-  useEffect(() => {
-    applySelections(); // Apply selections automatically on dateRange change
-  }, [dateRange]);
-
-  // Function to handle OverlayPanel toggle and display filter options
   return (
     <div className="card flex flex-column align-items-center w-sm">
       <Toast ref={toast} />
-      <Button
-        type="button"
-        icon="pi pi-filter-fill"
-        onClick={(e) => op.current.toggle(e)}
-      />
+      <Button type="button" icon="pi pi-filter-fill" onClick={onOverlayToggle} />
 
       <OverlayPanel
         ref={op}
@@ -583,10 +558,12 @@ const PopupDoc = () => {
         className="mr-5"
       >
         <div className="flex justify-end pb-1">
-          <Button type="button" onClick={(e) => op.current.toggle(e)}>
+          <Button type="button" onClick={onOverlayToggle}>
             Close
           </Button>
         </div>
+
+        {/* LOB Filter */}
         <MultiSelect
           value={selectedLOB}
           onChange={(e) => setSelectedLOB(e.value)}
@@ -600,6 +577,7 @@ const PopupDoc = () => {
         />
         <br />
 
+        {/* Device Type Filter */}
         <MultiSelect
           value={selectedDeviceType}
           onChange={(e) => setSelectedDeviceType(e.value)}
@@ -613,6 +591,7 @@ const PopupDoc = () => {
         />
         <br />
 
+        {/* Interaction Reason Filter */}
         <MultiSelect
           value={selectedInteractionReason}
           onChange={(e) => setSelectedInteractionReason(e.value)}
@@ -626,6 +605,7 @@ const PopupDoc = () => {
         />
 
         <div className="w-full flex justify-between">
+          {/* Clear Button */}
           <Button
             label="Clear"
             onClick={clearSelections}
@@ -633,9 +613,10 @@ const PopupDoc = () => {
             style={{ width: "100px", height: "35px" }}
           />
 
+          {/* Apply Button */}
           <Button
             label="Apply"
-            onClick={() => applySelections()} // Manually apply selections if user wants
+            onClick={applySelections}
             className="w-80 p-button-primary bg-fuchsia-700 mr-5 mt-3 text-white"
             style={{ width: "100px" }}
           />
@@ -646,4 +627,3 @@ const PopupDoc = () => {
 };
 
 export default PopupDoc;
-
