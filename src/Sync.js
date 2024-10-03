@@ -247,6 +247,18 @@ const DownloadTabView = (props) => {
 export default DownloadTabView;
 
 
+/* Custom styling for the active tab underline */
 .p-tabview-nav li.p-highlight .p-tabview-title {
-    border-bottom: 2px solid #007ad9; /* Customize the color and thickness */
+    position: relative; /* Ensure the title can position its children */
+    margin-bottom: 5px; /* Space between title and hr */
+}
+
+.p-tabview-nav li.p-highlight .p-tabview-title:after {
+    content: ""; /* Create a pseudo-element */
+    position: absolute;
+    left: 0; /* Align to the left */
+    right: 0; /* Align to the right */
+    bottom: 0; /* Position it at the bottom */
+    height: 2px; /* Height of the hr */
+    background-color: #007ad9; /* Use the color from the lara-light-indigo theme */
 }
