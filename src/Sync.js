@@ -208,11 +208,13 @@ import TopicsPage from './TopicsPage';
 
 const DownloadTabView = (props) => {
     const [scrollableTabs, setScrollableTabs] = useState([]);
-    const [activeIndex, setActiveIndex] = useState(0);  // Track the active tab index
     const { downloadData } = props;
-
+    
     // Extracting the feedback data from props
     const propsData = downloadData?.downloadData;
+
+    // Log for debugging
+    console.log(downloadData?.summaryData, propsData, 'inside tab view download', scrollableTabs);
 
     useEffect(() => {
         if (downloadData && Object.keys(downloadData).length !== 0) {
@@ -222,23 +224,17 @@ const DownloadTabView = (props) => {
                 { title: 'Positive Feedback', content: <TopicsPage data={propsData?.positiveFeedback} /> },
                 { title: 'Negative Feedback', content: <TopicsPage data={propsData?.negativeFeedback} /> },
             ];
-
-            // Update tabs and reset the active index
             setScrollableTabs(newTabs);
-            setActiveIndex(0);  // Reset the active tab to the first one
         }
-    }, [downloadData]);  // Trigger this effect when `downloadData` changes
+    }, [downloadData]); // Trigger whenever downloadData changes
 
     return (
         <div className="card">
-            <TabView 
-                activeIndex={activeIndex} 
-                onTabChange={(e) => setActiveIndex(e.index)}  // Handle tab change to update active index
-                scrollable
-            >
+            <TabView key={scrollableTabs.length} scrollable>
                 {scrollableTabs.map((tab, index) => (
                     <TabPanel key={index} header={tab.title}>
-                        <hr />
+                        {/* Styled horizontal rule */}
+                        <hr style={{ borderTop: '2px solid black', margin: '10px 0' }} />
                         <br />
                         <p className="m-0">{tab.content}</p>
                     </TabPanel>
@@ -249,4 +245,5 @@ const DownloadTabView = (props) => {
 };
 
 export default DownloadTabView;
+
 
