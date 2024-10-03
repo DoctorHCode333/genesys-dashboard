@@ -201,8 +201,6 @@ const DownloadView = (props) => {
 
 export default DownloadView;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 import React, { useState, useEffect } from 'react';
 import { TabView, TabPanel } from 'primereact/tabview';
 import SummaryPage from './SummaryPage';
@@ -210,30 +208,34 @@ import TopicsPage from './TopicsPage';
 
 const DownloadTabView = (props) => {
     const [scrollableTabs, setScrollableTabs] = useState([]);
+    const [activeIndex, setActiveIndex] = useState(0);  // Track the active tab index
     const { downloadData } = props;
-    
+
     // Extracting the feedback data from props
     const propsData = downloadData?.downloadData;
 
-    // Log for debugging
-    console.log(downloadData?.summaryData, propsData, 'inside tab view download', scrollableTabs);
-
     useEffect(() => {
-        if (Object.keys(downloadData).length !== 0) {
+        if (downloadData && Object.keys(downloadData).length !== 0) {
             // Prepare the tabs in one go
             const newTabs = [
                 { title: 'Summary', content: <SummaryPage data={downloadData.summaryData} /> },
-                { title: 'Positive Feedback', content: <TopicsPage data={propsData.positiveFeedback} /> },
-                { title: 'Negative Feedback', content: <TopicsPage data={propsData.negativeFeedback} /> },
+                { title: 'Positive Feedback', content: <TopicsPage data={propsData?.positiveFeedback} /> },
+                { title: 'Negative Feedback', content: <TopicsPage data={propsData?.negativeFeedback} /> },
             ];
-            // Set the tabs state in a single state update
+
+            // Update tabs and reset the active index
             setScrollableTabs(newTabs);
+            setActiveIndex(0);  // Reset the active tab to the first one
         }
-    }, [downloadData]);
+    }, [downloadData]);  // Trigger this effect when `downloadData` changes
 
     return (
         <div className="card">
-            <TabView scrollable>
+            <TabView 
+                activeIndex={activeIndex} 
+                onTabChange={(e) => setActiveIndex(e.index)}  // Handle tab change to update active index
+                scrollable
+            >
                 {scrollableTabs.map((tab, index) => (
                     <TabPanel key={index} header={tab.title}>
                         <hr />
@@ -247,3 +249,4 @@ const DownloadTabView = (props) => {
 };
 
 export default DownloadTabView;
+
