@@ -156,21 +156,73 @@ const generateExcel = (selectedOptions) => {
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-return (
+import React from 'react';
+import { Chip } from 'primereact/chip'; // PrimeReact Chip component
 
+// HeaderFilterChips Component
+const HeaderFilterChips = ({
+  filters,
+  removeItemFromLOB,
+  removeItemFromConversationIDs,
+  removeItemFromDeviceType,
+  removeItemFromInteractionReason
+}) => {
+  // Check if there are any active filters
+  const hasActiveFilters = filters.lob.length > 0 || filters.converstionIDs.length > 0 || filters.deviceType.length > 0 || filters.interactionReason.length > 0;
+
+  // Render the component
+  return (
     <>
-      {values.length > 0 ? (
+      {hasActiveFilters ? (
         <div className="card flex flex-wrap gap-2 text-xs">
-          {values.map((item, index) => (
-            <Chip className='text-xs text-black bg-sky-300' key={item.name} label={item.name} onRemove={() => {
-              removeItemFromQueue1(item.name)
-            }} removable />
+          {/* Render LOB filter chips */}
+          {filters.lob.map((name, index) => (
+            <Chip
+              className="text-xs text-black bg-sky-300"
+              key={`lob-${index}`}
+              label={name}
+              removable
+              onRemove={() => removeItemFromLOB(name)} // Call specific action for LOB
+            />
           ))}
 
+          {/* Render ConversationIDs filter chips */}
+          {filters.converstionIDs.map((name, index) => (
+            <Chip
+              className="text-xs text-black bg-sky-300"
+              key={`converstionIDs-${index}`}
+              label={name}
+              removable
+              onRemove={() => removeItemFromConversationIDs(name)} // Call specific action for Conversation IDs
+            />
+          ))}
+
+          {/* Render DeviceType filter chips */}
+          {filters.deviceType.map((name, index) => (
+            <Chip
+              className="text-xs text-black bg-sky-300"
+              key={`deviceType-${index}`}
+              label={name}
+              removable
+              onRemove={() => removeItemFromDeviceType(name)} // Call specific action for Device Type
+            />
+          ))}
+
+          {/* Render InteractionReason filter chips */}
+          {filters.interactionReason.map((name, index) => (
+            <Chip
+              className="text-xs text-black bg-sky-300"
+              key={`interactionReason-${index}`}
+              label={name}
+              removable
+              onRemove={() => removeItemFromInteractionReason(name)} // Call specific action for Interaction Reason
+            />
+          ))}
         </div>
       ) : null}
-
     </>
-
   );
-}
+};
+
+export default HeaderFilterChips;
+
