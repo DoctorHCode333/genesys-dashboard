@@ -154,3 +154,23 @@ const generateExcel = (selectedOptions) => {
         showDownloadErrorToast();
     }
 };
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+return (
+
+    <>
+      {values.length > 0 ? (
+        <div className="card flex flex-wrap gap-2 text-xs">
+          {values.map((item, index) => (
+            <Chip className='text-xs text-black bg-sky-300' key={item.name} label={item.name} onRemove={() => {
+              removeItemFromQueue1(item.name)
+            }} removable />
+          ))}
+
+        </div>
+      ) : null}
+
+    </>
+
+  );
+}
