@@ -322,3 +322,58 @@ resource "genesyscloud_integration_action" "waitTime" {
     success_template         = "{\n   \"estimated_wait_time\": ${estimated_wait_time}\n}"
   }
 }
+///////0///////////////////////////////////////////////
+
+import React, { useState } from 'react';
+import { Menubar } from 'primereact/menubar';
+import { Sidebar } from 'primereact/sidebar';
+import { Button } from 'primereact/button';
+import 'primereact/resources/themes/saga-blue/theme.css'; // Replace with your theme
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css'; // PrimeIcons for hamburger icon
+import 'primeflex/primeflex.css'; // Optional for layout utilities
+
+export default function HamburgerMenu() {
+    const [visible, setVisible] = useState(false);
+
+    const items = [
+        { label: 'Home', icon: 'pi pi-fw pi-home' },
+        { label: 'About', icon: 'pi pi-fw pi-info' },
+        { label: 'Contact', icon: 'pi pi-fw pi-phone' },
+        {
+            label: 'Settings',
+            icon: 'pi pi-fw pi-cog',
+            items: [
+                { label: 'Profile', icon: 'pi pi-fw pi-user' },
+                { label: 'Security', icon: 'pi pi-fw pi-lock' }
+            ]
+        }
+    ];
+
+    const start = (
+        <Button
+            icon="pi pi-bars"
+            className="p-button-rounded p-button-text"
+            onClick={() => setVisible(true)}
+        />
+    );
+
+    return (
+        <div>
+            {/* Menubar with a hamburger button at the start */}
+            <Menubar start={start} />
+            
+            {/* Sidebar to show when hamburger menu is clicked */}
+            <Sidebar visible={visible} onHide={() => setVisible(false)}>
+                <h3>Menu</h3>
+                <ul>
+                    {items.map((item, index) => (
+                        <li key={index} style={{ marginBottom: '1rem' }}>
+                            <Button label={item.label} icon={item.icon} className="p-button-text" />
+                        </li>
+                    ))}
+                </ul>
+            </Sidebar>
+        </div>
+    );
+}
