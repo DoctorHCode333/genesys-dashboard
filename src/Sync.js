@@ -252,3 +252,6 @@ const DownloadView = (props) => {
 };
 
 export default DownloadView;
+
+
+SELECT COUNT(*) FROM HIST_TOPICS_IXNS WHERE STARTDATE>TO_TIMESTAMP('2024-09-19', 'YYYY-MM-DD') AND STARTDATE<TO_TIMESTAMP('2024-09-20', 'YYYY-MM-DD');
