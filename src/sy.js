@@ -70,3 +70,122 @@ const ToggleButton = () => {
 };
 
 export default ToggleButton;
+
+
+
+import React, { useRef } from "react";
+import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from "chart.js";
+import { Bar } from "react-chartjs-2";
+import { Button } from "primereact/button";
+import { Box, ChakraProvider } from "@chakra-ui/react";
+
+ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+
+const GroupedBarChart = () => {
+  const chartRef = useRef(null);
+
+  // Data for the chart
+  const data = {
+    labels: ["Silence Time", "Customer Time", "Agent Time", "Other(Hold/Noise/Secure Pause)", "Queue Wait Time", "IVR Time"],
+    datasets: [
+      {
+        label: "WS Plan with Ease",
+        data: [13, 16, 26, 9, 10, 10],
+        backgroundColor: "yellow",
+        borderColor: "yellow",
+        borderWidth: 1,
+      },
+      {
+        label: "WS Corporate Market Launch",
+        data: [12, 22, 32, 9, 10, 30],
+        backgroundColor: "orange",
+        borderColor: "orange",
+        borderWidth: 1,
+      },
+      {
+        label: "WS DCPCOM Test Client",
+        data: [23, 2, 6, 19, 1, 55],
+        backgroundColor: "orangered",
+        borderColor: "orangered",
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    indexAxis: "y", // Horizontal bar chart
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      tooltip: {
+        enabled: true,
+      },
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: "Percentage (%)",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Categories",
+        },
+      },
+    },
+  };
+
+  // Reset Zoom Functionality
+  const handleResetZoom = () => {
+    const chartInstance = chartRef.current;
+    if (chartInstance) {
+      chartInstance.resetZoom();
+    }
+  };
+
+  return (
+    <ChakraProvider>
+      <Box p={5}>
+        <div style={{ width: "80%", margin: "0 auto" }}>
+          <Bar data={data} options={options} ref={chartRef} />
+          <Button
+            label="Reset Zoom"
+            onClick={handleResetZoom}
+            className="p-button-outlined p-button-secondary mt-3"
+          />
+        </div>
+      </Box>
+    </ChakraProvider>
+  );
+};
+
+export default GroupedBarChart;
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+}
+
+.chart-container {
+  margin: 20px auto;
+  width: 80%;
+  text-align: center;
+}
+
+.p-button-secondary {
+  background-color: #f46b42; /* Orangered */
+  border-color: #f46b42;
+  color: white;
+}
+
+.p-button-secondary:hover {
+  background-color: #d9534f; /* Darker shade */
+  border-color: #d9534f;
+}
