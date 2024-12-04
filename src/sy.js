@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+jiimport React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -189,3 +189,54 @@ body {
   background-color: #d9534f; /* Darker shade */
   border-color: #d9534f;
 }
+
+import React from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts";
+
+const data = [
+  {
+    conversationId: "001",
+    silence: 20,
+    customerTalk: 30,
+    agentTalk: 25,
+    IVR: 10,
+    queueWait: 10,
+    other: 5,
+  },
+  {
+    conversationId: "002",
+    silence: 15,
+    customerTalk: 35,
+    agentTalk: 30,
+    IVR: 5,
+    queueWait: 10,
+    other: 5,
+  },
+  // Add more conversation data here
+];
+
+const StackedBarChart = () => {
+  return (
+    <BarChart
+      width={800}
+      height={400}
+      data={data}
+      layout="vertical"
+      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+    >
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis type="number" domain={[0, 100]} />
+      <YAxis type="category" dataKey="conversationId" />
+      <Tooltip />
+      <Legend />
+      <Bar dataKey="silence" stackId="a" fill="#8884d8" name="Silence Time" />
+      <Bar dataKey="customerTalk" stackId="a" fill="#82ca9d" name="Customer Talk Time" />
+      <Bar dataKey="agentTalk" stackId="a" fill="#ffc658" name="Agent Talk Time" />
+      <Bar dataKey="IVR" stackId="a" fill="#ff8042" name="IVR Time" />
+      <Bar dataKey="queueWait" stackId="a" fill="#8dd1e1" name="Queue Wait Time" />
+      <Bar dataKey="other" stackId="a" fill="#a4de6c" name="Other Time" />
+    </BarChart>
+  );
+};
+
+export default StackedBarChart;
