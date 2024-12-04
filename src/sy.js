@@ -191,51 +191,51 @@ body {
 }
 
 import React from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from "recharts";
 
+// Sample data with more than 5 conversation IDs
 const data = [
-  {
-    conversationId: "001",
-    silence: 20,
-    customerTalk: 30,
-    agentTalk: 25,
-    IVR: 10,
-    queueWait: 10,
-    other: 5,
-  },
-  {
-    conversationId: "002",
-    silence: 15,
-    customerTalk: 35,
-    agentTalk: 30,
-    IVR: 5,
-    queueWait: 10,
-    other: 5,
-  },
-  // Add more conversation data here
+  { conversationId: "001", silence: 20, customerTalk: 30, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "002", silence: 15, customerTalk: 35, agentTalk: 30, IVR: 5, queueWait: 10, other: 5 },
+  { conversationId: "003", silence: 10, customerTalk: 40, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "004", silence: 25, customerTalk: 25, agentTalk: 20, IVR: 15, queueWait: 10, other: 5 },
+  { conversationId: "005", silence: 30, customerTalk: 20, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "006", silence: 10, customerTalk: 40, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "007", silence: 15, customerTalk: 35, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "008", silence: 20, customerTalk: 30, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "009", silence: 10, customerTalk: 35, agentTalk: 30, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "010", silence: 15, customerTalk: 40, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
+  { conversationId: "011", silence: 25, customerTalk: 30, agentTalk: 20, IVR: 15, queueWait: 10, other: 5 },
+  { conversationId: "012", silence: 20, customerTalk: 30, agentTalk: 25, IVR: 10, queueWait: 10, other: 5 },
 ];
 
 const StackedBarChart = () => {
   return (
-    <BarChart
-      width={800}
-      height={400}
-      data={data}
-      layout="vertical"
-      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-    >
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis type="number" domain={[0, 100]} />
-      <YAxis type="category" dataKey="conversationId" />
-      <Tooltip />
-      <Legend />
-      <Bar dataKey="silence" stackId="a" fill="#8884d8" name="Silence Time" />
-      <Bar dataKey="customerTalk" stackId="a" fill="#82ca9d" name="Customer Talk Time" />
-      <Bar dataKey="agentTalk" stackId="a" fill="#ffc658" name="Agent Talk Time" />
-      <Bar dataKey="IVR" stackId="a" fill="#ff8042" name="IVR Time" />
-      <Bar dataKey="queueWait" stackId="a" fill="#8dd1e1" name="Queue Wait Time" />
-      <Bar dataKey="other" stackId="a" fill="#a4de6c" name="Other Time" />
-    </BarChart>
+    <div style={{ width: "100%", height: "400px", overflowY: "scroll" }}>
+      {/* The scroll container wraps the ResponsiveContainer */}
+      <div style={{ height: "100%", overflowY: "scroll" }}>
+        <BarChart
+          width={600}  // Fixed width
+          height={300} // Fixed height for the visible area
+          data={data}
+          layout="vertical"
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          barCategoryGap={8}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis type="number" domain={[0, 100]} />
+          <YAxis type="category" dataKey="conversationId" />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="silence" stackId="a" fill="#8884d8" name="Silence Time" barSize={12} />
+          <Bar dataKey="customerTalk" stackId="a" fill="#82ca9d" name="Customer Talk Time" barSize={12} />
+          <Bar dataKey="agentTalk" stackId="a" fill="#ffc658" name="Agent Talk Time" barSize={12} />
+          <Bar dataKey="IVR" stackId="a" fill="#ff8042" name="IVR Time" barSize={12} />
+          <Bar dataKey="queueWait" stackId="a" fill="#8dd1e1" name="Queue Wait Time" barSize={12} />
+          <Bar dataKey="other" stackId="a" fill="#a4de6c" name="Other Time" barSize={12} />
+        </BarChart>
+      </div>
+    </div>
   );
 };
 
