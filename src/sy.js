@@ -240,3 +240,203 @@ const StackedBarChart = () => {
 };
 
 export default StackedBarChart;
+
+Here's a structured documentation format with appropriate content for adding the "Total Interaction Volume" card to your dashboard. This format ensures clarity and completeness for stakeholders, developers, and other team members.
+
+
+---
+
+Technical Documentation: Addition of Total Interaction Volume Card to Dashboard
+
+1. Overview
+
+The purpose of this document is to describe the implementation of a new statistical card in the dashboard to display "Total Interaction Volume". This metric calculates the total number of interactions routed to a custom chatbot implemented on the system.
+
+Due to limitations in the current batch job logic, a new solution is required to capture, process, and store historical interaction data from Genesys Cloud. The solution will involve creating:
+
+1. A new batch job to fetch accurate data.
+
+
+2. A new table to store this historical interaction data.
+
+
+
+
+---
+
+2. Objective
+
+Add a new card named "Total Interaction Volume" to the dashboard.
+
+Display the cumulative count of all interactions (or total interaction volume) routed to the custom chatbot.
+
+Address the current logic's insufficiencies by designing an optimized solution.
+
+Ensure the data is fetched, processed, and stored properly for historical tracking.
+
+
+
+---
+
+3. Problem Statement
+
+The current batch job logic does not effectively fetch the total interaction volume routed to the chatbot.
+
+Historical interaction data is not stored for easy retrieval.
+
+Accurate reporting and dashboard visualization are hindered by the existing system's limitations.
+
+
+
+---
+
+4. Proposed Solution
+
+4.1 New Batch Job
+
+A simple batch job will be created with the following responsibilities:
+
+Fetch interaction or conversation data routed to the chatbot from Genesys Cloud.
+
+Filter and validate relevant records to calculate the interaction volume.
+
+Store the total count into a new dedicated database table for historical reference.
+
+
+The batch job will run at regular intervals (e.g., hourly or daily) to ensure the latest data is processed and stored.
+
+4.2 New Database Table
+
+A separate table will be created in the database to store historical interaction data.
+
+Proposed Table Schema: | Column Name           | Data Type    | Description                                  | |------------------------|--------------|----------------------------------------------| | id                  | INT (PK)     | Auto-increment unique identifier.            | | date                | DATE         | Date when the batch job fetches the data.    | | interaction_volume  | INT          | Total count of interactions for that day.    | | bot_id              | VARCHAR      | Identifier of the custom chatbot.            | | created_at          | TIMESTAMP    | Timestamp when the record is created.        |
+
+
+---
+
+5. Implementation Steps
+
+5.1 Research and Logic Development
+
+Analyze the interaction data routed to the chatbot via Genesys Cloud APIs.
+
+Identify the relevant API endpoints or conversation logs that hold data on routed interactions.
+
+Determine the filtering criteria (e.g., chatbot identifiers, conversation status, etc.).
+
+
+5.2 Develop the Batch Job
+
+Write a script (e.g., Python, Java, or preferred language) to:
+
+Call Genesys Cloud API to fetch conversation/interactions.
+
+Parse and filter relevant data based on chatbot routing.
+
+Calculate the total interaction count.
+
+Insert the processed data into the new table.
+
+
+
+Pseudocode:
+
+fetch_conversations_from_api():
+    response = api_call_to_genesys_cloud()
+    filtered_data = []
+    for interaction in response:
+        if interaction['route_to'] == 'custom_bot_id':
+            filtered_data.append(interaction)
+    return len(filtered_data)
+
+store_data_in_db(count):
+    db.insert({
+        'date': current_date,
+        'interaction_volume': count,
+        'bot_id': 'custom_bot_id',
+        'created_at': now()
+    })
+
+main():
+    count = fetch_conversations_from_api()
+    store_data_in_db(count)
+
+5.3 Create the Database Table
+
+Run SQL commands to set up the table as per the proposed schema.
+
+CREATE TABLE interaction_volume_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL,
+    interaction_volume INT NOT NULL,
+    bot_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+5.4 Dashboard Integration
+
+Query the interaction_volume_history table to fetch the latest total interaction count.
+
+Add the Total Interaction Volume card to the dashboard UI.
+
+Ensure the card dynamically updates based on the stored data.
+
+
+
+---
+
+6. Testing and Validation
+
+Unit Testing: Test the batch job script to ensure accurate data fetching, filtering, and storage.
+
+Integration Testing: Validate data flow between Genesys Cloud, the database, and the dashboard.
+
+Performance Testing: Check batch job execution time and database performance for scalability.
+
+Data Validation: Cross-check the data fetched from Genesys Cloud API with the total count stored in the database.
+
+
+
+---
+
+7. Deployment
+
+Deploy the batch job on the designated server or cloud environment.
+
+Schedule the job using a scheduler tool (e.g., cron, Airflow) for periodic execution.
+
+Update the database schema in the production environment.
+
+Integrate the dashboard card and verify the real-time updates.
+
+
+
+---
+
+8. Monitoring and Maintenance
+
+Implement logging for the batch job to track errors and execution success.
+
+Set up alerts for failures in batch job execution.
+
+Monitor data consistency in the new table.
+
+
+
+---
+
+9. Risks and Mitigation
+
+
+---
+
+10. Conclusion
+
+This implementation ensures accurate tracking and display of the Total Interaction Volume for the custom chatbot. By introducing a new batch job and dedicated database table, the solution addresses current limitations and supports historical data storage.
+
+
+---
+
+Let me know if you need further refinements or additional sections!
+
+
