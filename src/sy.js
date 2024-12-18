@@ -439,4 +439,132 @@ This implementation ensures accurate tracking and display of the Total Interacti
 
 Let me know if you need further refinements or additional sections!
 
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Grid,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Typography,
+  Paper,
+} from "@mui/material";
 
+const CallFlowSelector = () => {
+  const [callFlowType, setCallFlowType] = useState("");
+  const [callFlows, setCallFlows] = useState([]);
+  const [selectedFlow, setSelectedFlow] = useState("");
+
+  // Simulated API call to fetch inbound call flows
+  useEffect(() => {
+    if (callFlowType === "Inbound") {
+      fetchInboundCallFlows();
+    } else {
+      setCallFlows([]); // Clear call flows if it's not inbound
+    }
+  }, [callFlowType]);
+
+  const fetchInboundCallFlows = async () => {
+    try {
+      // Replace with actual API call to Genesys Cloud
+      const response = await fetch("/api/inbound-call-flows"); // Example endpoint
+      const data = await response.json();
+      setCallFlows(data);
+    } catch (error) {
+      console.error("Error fetching inbound call flows:", error);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        padding: "40px",
+        maxWidth: "500px",
+        margin: "40px auto",
+        borderRadius: "12px",
+        backgroundColor: "#f9f9f9",
+        boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+      }}
+      component={Paper}
+      elevation={3}
+    >
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{ textAlign: "center", fontWeight: 600, marginBottom: "16px" }}
+      >
+        Call Flow Selector
+      </Typography>
+
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <FormControl fullWidth>
+            <InputLabel id="call-flow-type-label">Call Flow Type</InputLabel>
+            <Select
+              labelId="call-flow-type-label"
+              value={callFlowType}
+              onChange={(e) => setCallFlowType(e.target.value)}
+              sx={{
+                borderRadius: "8px",
+                backgroundColor: "#fff",
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#ccc",
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#4caf50",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "#4caf50",
+                },
+              }}
+            >
+              <MenuItem value="Inbound">Inbound</MenuItem>
+              <MenuItem value="Outbound">Outbound</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {callFlowType === "Inbound" && (
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel id="inbound-call-flows-label">
+                Inbound Call Flows
+              </InputLabel>
+              <Select
+                labelId="inbound-call-flows-label"
+                value={selectedFlow}
+                onChange={(e) => setSelectedFlow(e.target.value)}
+                sx={{
+                  borderRadius: "8px",
+                  backgroundColor: "#fff",
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#ccc",
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#4caf50",
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "#4caf50",
+                  },
+                }}
+              >
+                {callFlows.length > 0 ? (
+                  callFlows.map((flow, index) => (
+                    <MenuItem key={index} value={flow.name}>
+                      {flow.name}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No call flows available</MenuItem>
+                )}
+              </Select>
+            </FormControl>
+          </Grid>
+        )}
+      </Grid>
+    </Box>
+  );
+};
+
+export default CallFlowSelector;
