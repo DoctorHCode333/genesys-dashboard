@@ -1,4 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+npm install react-spring framer-motion @mui/material @mui/system
+
+import React, { useEffect, useRef, useState } from 'react';
+import { useSpring, animated } from 'react-spring';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import { styled } from '@mui/system';
 
@@ -7,6 +10,7 @@ const Container = styled(Box)({
   overflowX: 'auto',
   padding: '20px',
   position: 'relative',
+  scrollSnapType: 'x mandatory',
   scrollbarWidth: 'thin',
   scrollbarColor: '#888 #e0e0e0',
   '&::-webkit-scrollbar': {
@@ -22,51 +26,31 @@ const Container = styled(Box)({
   },
 });
 
-const CardWrapper = styled(Box)(({ scrollProgress }) => ({
+const CardWrapper = styled(animated.div)(({ rotate, scale }) => ({
   flexShrink: 0,
-  margin: '0 10px',
-  width: 'calc(100% / 5)', // Only 5 cards visible at a time
-  opacity: 1 - Math.abs(scrollProgress),
-  transform: `scale(${1 - Math.abs(scrollProgress) * 0.25})`,
-  transition: 'transform 0.3s, opacity 0.3s',
+  width: 'calc(100% / 5)',
+  transform: `perspective(1000px) rotateY(${rotate}deg) scale(${scale})`,
+  transformOrigin: 'center',
+  transition: 'transform 0.3s',
+  willChange: 'transform',
 }));
 
 const StyledCard = styled(Card)({
-  transition: 'transform 0.3s, box-shadow 0.3s',
   boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
-  '&:hover': {
-    transform: 'scale(1.1)',
-    boxShadow: '0px 6px 15px rgba(0, 0, 0, 0.2)',
-  },
 });
 
 const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
   const containerRef = useRef();
+  const [scrollProgress, setScrollProgress] = useState(0);
 
-  useEffect(() => {
+  const handleScroll = () => {
     const container = containerRef.current;
+    const scrollLeft = container.scrollLeft;
+    const containerWidth = container.clientWidth;
+    const totalScrollWidth = container.scrollWidth - containerWidth;
 
-    const handleScroll = () => {
-      const scrollLeft = container.scrollLeft;
-      const containerWidth = container.clientWidth;
-      const cardWidth = containerWidth / 5; // 5 cards visible
-      const totalScrollWidth = container.scrollWidth;
-
-      container.querySelectorAll('[data-index]').forEach((card, index) => {
-        const cardLeft = index * cardWidth;
-        const cardCenter = cardLeft + cardWidth / 2;
-        const containerCenter = scrollLeft + containerWidth / 2;
-        const scrollProgress = (containerCenter - cardCenter) / (containerWidth / 2);
-
-        card.style.setProperty('--scrollProgress', scrollProgress);
-      });
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial call to set the positions
-
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
+    setScrollProgress(scrollLeft / totalScrollWidth);
+  };
 
   const handleMouseMove = (e) => {
     const container = containerRef.current;
@@ -75,24 +59,36 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
     const width = rect.width;
 
     if (x < width * 0.2) {
-      container.scrollBy({ left: -10, behavior: 'smooth' });
+      container.scrollBy({ left: -20, behavior: 'smooth' });
     } else if (x > width * 0.8) {
-      container.scrollBy({ left: 10, behavior: 'smooth' });
+      container.scrollBy({ left: 20, behavior: 'smooth' });
     }
   };
 
+  useEffect(() => {
+    const container = containerRef.current;
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <Container ref={containerRef} onMouseMove={handleMouseMove}>
-      {cards.map((card, index) => (
-        <CardWrapper key={index} data-index={index} scrollProgress={0}>
-          <StyledCard>
-            <CardContent>
-              <Typography variant="h5">Card {card}</Typography>
-              <Typography variant="body2">Some content here...</Typography>
-            </CardContent>
-          </StyledCard>
-        </CardWrapper>
-      ))}
+      {cards.map((card, index) => {
+        const position = (index - scrollProgress * (cards.length - 1)) / (cards.length - 1);
+        const rotate = position * -30; // Rotate cards on the Y-axis
+        const scale = 1 - Math.abs(position) * 0.2; // Scale cards based on their position
+
+        return (
+          <CardWrapper key={index} rotate={rotate} scale={scale}>
+            <StyledCard>
+              <CardContent>
+                <Typography variant="h5">Card {card}</Typography>
+                <Typography variant="body2">Some content here...</Typography>
+              </CardContent>
+            </StyledCard>
+          </CardWrapper>
+        );
+      })}
     </Container>
   );
 };
