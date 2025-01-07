@@ -20,30 +20,14 @@ const Container = styled(Box)({
   '&::-webkit-scrollbar-thumb:hover': {
     background: '#555',
   },
-  '&::before, &::after': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: '50px',
-    zIndex: 1,
-  },
-  '&::before': {
-    left: 0,
-    background: 'linear-gradient(to right, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0))',
-  },
-  '&::after': {
-    right: 0,
-    background: 'linear-gradient(to left, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0))',
-  },
 });
 
 const CardWrapper = styled(Box)(({ scrollProgress }) => ({
   flexShrink: 0,
   margin: '0 10px',
-  width: 'calc(100% / 5)', // Only 5 cards visible in viewport
-  opacity: Math.max(0.5, 1 - Math.abs(scrollProgress) * 1.5),
-  transform: `scale(${1 - Math.abs(scrollProgress) * 0.2}) translateY(${Math.abs(scrollProgress) * 20}px)`,
+  width: 'calc(100% / 5)', // Only 5 cards visible at a time
+  opacity: 1 - Math.abs(scrollProgress),
+  transform: `scale(${1 - Math.abs(scrollProgress) * 0.25})`,
   transition: 'transform 0.3s, opacity 0.3s',
 }));
 
@@ -62,20 +46,27 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
   useEffect(() => {
     const container = containerRef.current;
 
-    const handleScroll = (e) => {
+    const handleScroll = () => {
       const scrollLeft = container.scrollLeft;
-      const scrollWidth = container.scrollWidth - container.clientWidth;
-      const scrollProgress = scrollLeft / scrollWidth;
+      const containerWidth = container.clientWidth;
+      const cardWidth = containerWidth / 5; // 5 cards visible
+      const totalScrollWidth = container.scrollWidth;
 
       container.querySelectorAll('[data-index]').forEach((card, index) => {
-        const cardPosition = (index - 2.5 + scrollProgress * (cards.length - 1)) / (cards.length - 1);
-        card.style.setProperty('--scrollProgress', cardPosition);
+        const cardLeft = index * cardWidth;
+        const cardCenter = cardLeft + cardWidth / 2;
+        const containerCenter = scrollLeft + containerWidth / 2;
+        const scrollProgress = (containerCenter - cardCenter) / (containerWidth / 2);
+
+        card.style.setProperty('--scrollProgress', scrollProgress);
       });
     };
 
     container.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial call to set the positions
+
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [cards.length]);
+  }, []);
 
   const handleMouseMove = (e) => {
     const container = containerRef.current;
