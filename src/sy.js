@@ -1,5 +1,3 @@
-npm install react-spring framer-motion @mui/material @mui/system
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useSpring, animated } from 'react-spring';
 import { Box, Card, CardContent, Typography } from '@mui/material';
@@ -7,36 +5,43 @@ import { styled } from '@mui/system';
 
 const Container = styled(Box)({
   display: 'flex',
-  overflowX: 'auto',
-  padding: '20px',
+  overflowX: 'hidden',
   position: 'relative',
-  scrollSnapType: 'x mandatory',
-  scrollbarWidth: 'thin',
-  scrollbarColor: '#888 #e0e0e0',
+  height: '300px', // Set height according to your preference
+  cursor: 'pointer',
+  '&:hover': {
+    scrollbarWidth: 'thin',
+  },
   '&::-webkit-scrollbar': {
     height: '8px',
   },
   '&::-webkit-scrollbar-thumb': {
-    background: '#888',
+    background: 'orange',
     borderRadius: '4px',
     transition: 'background 0.3s',
   },
   '&::-webkit-scrollbar-thumb:hover': {
-    background: '#555',
+    background: 'darkorange',
   },
 });
 
 const CardWrapper = styled(animated.div)(({ rotate, scale }) => ({
   flexShrink: 0,
-  width: 'calc(100% / 5)',
+  width: '20%', // Five cards in the viewport
+  height: '100%',
   transform: `perspective(1000px) rotateY(${rotate}deg) scale(${scale})`,
   transformOrigin: 'center',
   transition: 'transform 0.3s',
-  willChange: 'transform',
 }));
 
 const StyledCard = styled(Card)({
+  width: '100%',
+  height: '100%',
   boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderRadius: '10px',
 });
 
 const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
@@ -59,9 +64,9 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
     const width = rect.width;
 
     if (x < width * 0.2) {
-      container.scrollBy({ left: -20, behavior: 'smooth' });
+      container.scrollBy({ left: -50, behavior: 'smooth' }); // Increased scroll speed
     } else if (x > width * 0.8) {
-      container.scrollBy({ left: 20, behavior: 'smooth' });
+      container.scrollBy({ left: 50, behavior: 'smooth' }); // Increased scroll speed
     }
   };
 
@@ -75,8 +80,8 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
     <Container ref={containerRef} onMouseMove={handleMouseMove}>
       {cards.map((card, index) => {
         const position = (index - scrollProgress * (cards.length - 1)) / (cards.length - 1);
-        const rotate = position * -30; // Rotate cards on the Y-axis
-        const scale = 1 - Math.abs(position) * 0.2; // Scale cards based on their position
+        const rotate = position * -30;
+        const scale = 1 - Math.abs(position) * 0.3;
 
         return (
           <CardWrapper key={index} rotate={rotate} scale={scale}>
