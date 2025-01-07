@@ -1,226 +1,665 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Box, Card, CardContent, Typography } from '@mui/material';
-import { styled } from '@mui/system';
+import React, { useState, useEffect } from "react";
+import "primereact/resources/themes/lara-light-indigo/theme.css"; //theme
+import "primereact/resources/primereact.min.css"; //core css
+import "primeicons/primeicons.css"; //icons
+import { useDispatch, useSelector } from "react-redux";
+import { Delete as DeleteIcon } from "@mui/icons-material";
+import InfoIcon from "@mui/icons-material/Info";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import { motion } from "framer-motion";
+import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
+import { areaElementClasses } from "@mui/x-charts/LineChart";
+import Slider from "@mui/material/Slider";
+import { getBotFeedback, getBotFeedbackTrend } from "../API/TopicAPI";
+import Loading from "./Loading";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  IconButton,
+  Grid,
+  Chip,
+  Tooltip,
+  Stack,
+} from "@mui/material";
 
-const CarouselContainer = styled(Box)({
-  display: 'flex',
-  overflowX: 'auto',
-  alignItems: 'center',
-  position: 'relative',
-  height: '500px',                    // Increased height for better visibility
-  padding: '40px 25%',                // Increased padding for better centering
-  backgroundColor: '#f5f5f5',
-  perspective: '2000px',              // Increased perspective for stronger 3D effect
-  
-  // Enhanced scrollbar
-  scrollbarWidth: 'thin',
-  scrollbarColor: 'orange transparent',
-  '&::-webkit-scrollbar': {
-    height: '10px',                   // Slightly larger scrollbar
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  '&::-webkit-scrollbar-thumb': {
-    backgroundColor: 'orange',
-    borderRadius: '5px',
-    '&:hover': {
-      backgroundColor: 'darkorange',
+function AreaGradient({ color, id }) {
+  return (
+    <defs>
+      <linearGradient id={id} x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+        <stop offset="100%" stopColor={color} stopOpacity={0} />
+      </linearGradient>
+    </defs>
+  );
+}
+
+const CategoriesReporting = (props) => {
+  const {
+    trendData,
+    dailyData,
+    cardData,
+    setCardData,
+    interactionsTrendData,
+    ACDTrendData,
+    customerTrendData,
+    agentTrendData,
+    silenceTrendData,
+    IVRTrendData,
+    othersTrendData,
+    overtalkTrendData,
+    selectedACDTime,
+    setSelectedACDTime,
+    selectedCustomerTime,
+    setSelectedCustomerTime,
+    selectedAgentTime,
+    setSelectedAgentTime,
+    selectedSilenceTime,
+    setSelectedSilenceTime,
+    selectedIVRTime,
+    setSelectedIVRTime,
+    selectedOthersTime,
+    setSelectedOthersTime,
+    selectedOvertalkCount,
+    setSelectedOvertalkCount,
+    resetTime
+  } = props;
+
+  const [tempValue, setTempValue] = useState([20, 50]);
+  const [finalValue, setFinalValue] = useState([20, 50]);
+  const dispatch = useDispatch();
+
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState(0);
+
+  const [ACDTimeRange, setACDTimeRange] = useState([0, 100]);
+  const [customerTimeRange, setCustomerTimeRange] = useState([0, 100]);
+  const [agentTimeRange, setAgentTimeRange] = useState([0, 100]);
+  const [silenceTimeRange, setSilenceTimeRange] = useState([0, 100]);
+  const [IVRTimeRange, setIVRTimeRange] = useState([0, 100]);
+  const [othersTimeRange, setOthersTimeRange] = useState([0, 100]);
+  const [overtalkRange, setOvertalkRange] = useState([0, 500]);
+
+  // const [selectedagentTime,setSelectedAgentTime]=useState([20, 50]);
+  // const [selectedcustomerTime,setSelectedCustomerTime]=useState([20, 50]);
+  // const [selectedQueueTime,setSelectedQueueTime]=useState([20, 50]);
+  // const [selectedIVRTime,setSelectedIVRTime]=useState([20, 50]);
+  // const [selectedothersTime,setSelectedOthersTime]=useState([20, 50]);
+  // const [selectedovertalk,setSelectedOvertalk]=useState([20, 50]);
+
+  const [cards, setCards] = useState([
+    {
+      category: "Total Interactions",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: false,
+      hasReset: true,
     },
-  },
-  
-  // Enhanced gradient edges
-  '&::before, &::after': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: '25%',                     // Matched with padding
-    pointerEvents: 'none',
-    zIndex: 2,
-  },
-  '&::before': {
-    left: 0,
-    background: 'linear-gradient(to right, rgba(245, 245, 245, 1) 0%, rgba(245, 245, 245, 0.5) 50%, rgba(245, 245, 245, 0) 100%)',
-  },
-  '&::after': {
-    right: 0,
-    background: 'linear-gradient(to left, rgba(245, 245, 245, 1) 0%, rgba(245, 245, 245, 0.5) 50%, rgba(245, 245, 245, 0) 100%)',
-  },
-});
-
-const CardWrapper = styled(Box)(({ transform, opacity }) => ({
-  flexShrink: 0,
-  width: '320px',                     // Slightly wider cards
-  height: '400px',                    // Taller cards
-  margin: '0 30px',                   // Increased margin between cards
-  transform,
-  opacity,
-  transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)', // Slower, smoother transition
-  transformStyle: 'preserve-3d',
-  transformOrigin: 'center center',   // Ensures scaling from center
-}));
-
-const StyledCard = styled(Card)({
-  width: '100%',
-  height: '100%',
-  background: 'linear-gradient(145deg, #ffffff 0%, #f0f0f0 100%)',
-  borderRadius: '20px',               // More rounded corners
-  overflow: 'hidden',
-  boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-  transition: 'all 0.4s ease',
-  '&:hover': {
-    boxShadow: '0 15px 40px rgba(0,0,0,0.25)',
-    transform: 'translateY(-8px) scale(1.02)', // Enhanced hover effect
-  },
-});
-
-const StyledCardContent = styled(CardContent)({
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: '30px',                    // More internal padding
-  textAlign: 'center',
-});
-
-const TrialCards = ({ cards = Array.from({ length: 9 }, (_, i) => i + 1) }) => {
-  const containerRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(Math.floor(cards.length / 2));
-  const [isScrolling, setIsScrolling] = useState(false);
-
-  const calculateCardStyle = (index) => {
-    const distance = index - activeIndex;
-    
-    // Enhanced scaling and opacity effects
-    const scale = Math.max(0.65,                   // Increased minimum scale
-                          1 - Math.abs(distance) * 0.15);  // Reduced scale drop-off
-    
-    const opacity = Math.max(0.5,                  // Increased minimum opacity
-                           1 - Math.abs(distance) * 0.2);  // Reduced opacity drop-off
-    
-    // Enhanced 3D positioning
-    const rotateY = distance * 12;                 // Increased rotation
-    const translateZ = -Math.abs(distance) * 60;   // Increased depth
-    const translateX = distance * 2;               // Reduced X-offset for better centering
-
-    return {
-      transform: `
-        translateX(${translateX}px)
-        scale(${scale})
-        rotateY(${rotateY}deg)
-        translateZ(${translateZ}px)
-        ${Math.abs(distance) > 2 ? 'translateY(40px)' : ''}  // Push far cards down slightly
-      `,
-      opacity,
-    };
-  };
-
-  const handleScroll = () => {
-    if (!containerRef.current || isScrolling) return;
-
-    const container = containerRef.current;
-    const scrollLeft = container.scrollLeft;
-    const cardWidth = 380;            // Adjusted for new card width + margin
-    const newIndex = Math.round(scrollLeft / cardWidth);
-    
-    // Prevent overshooting at ends
-    if (newIndex >= 0 && newIndex < cards.length) {
-      setActiveIndex(newIndex);
-    }
-  };
-
-  const handleEdgeScroll = (direction) => {
-    if (!containerRef.current || isScrolling) return;
-    
-    setIsScrolling(true);
-    const container = containerRef.current;
-    const cardWidth = 380;
-    
-    // Smooth multi-card scrolling
-    container.scrollBy({
-      left: direction * cardWidth,
-      behavior: 'smooth'
-    });
-
-    setTimeout(() => setIsScrolling(false), 600); // Matched with transition time
-  };
+    {
+      category: "Silence Time",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: true,
+      rangeValue: silenceTimeRange,
+      rangeSelect: setSilenceTimeRange,
+      rangeConfirm: setSelectedSilenceTime,
+    },
+    {
+      category: "Agent Talk Time",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: true,
+      rangeValue: agentTimeRange,
+      rangeSelect: setAgentTimeRange,
+      rangeConfirm: setSelectedAgentTime,
+    },
+    {
+      category: "Customer Talk Time",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: true,
+      rangeValue: customerTimeRange,
+      rangeSelect: setCustomerTimeRange,
+      rangeConfirm: setSelectedCustomerTime,
+    },
+    {
+      category: "Queue Wait Time",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: true,
+      rangeValue: ACDTimeRange,
+      rangeSelect: setACDTimeRange,
+      rangeConfirm: setSelectedACDTime,
+    },
+    {
+      category: "IVR Time",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: true,
+      rangeValue: IVRTimeRange,
+      rangeSelect: setIVRTimeRange,
+      rangeConfirm: setSelectedIVRTime,
+    },
+    {
+      category: "Others",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: true,
+      rangeValue: othersTimeRange,
+      rangeSelect: setOthersTimeRange,
+      rangeConfirm: setSelectedOthersTime,
+    },
+    {
+      category: "Overtalk Count",
+      isRemovable: false,
+      description: `This card shows total count of feedback in last ${period} days.`,
+      hasRange: true,
+      rangeValue: overtalkRange,
+      rangeSelect: setOvertalkRange,
+      rangeConfirm: setSelectedOvertalkCount,
+    },
+  ]);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      // Improved initial centering
-      requestAnimationFrame(() => {
-        container.scrollLeft = activeIndex * 380;
-      });
-    }
-    return () => container?.removeEventListener('scroll', handleScroll);
-  }, []);
+    setACDTimeRange([selectedACDTime.from, selectedACDTime.to]);
+  }, [selectedACDTime]);
+  useEffect(() => {
+    setCustomerTimeRange([selectedCustomerTime.from, selectedCustomerTime.to]);
+  }, [selectedCustomerTime]);
+  useEffect(() => {
+    setAgentTimeRange([selectedAgentTime.from, selectedAgentTime.to]);
+  }, [selectedAgentTime]);
+  useEffect(() => {
+    setSilenceTimeRange([selectedSilenceTime.from, selectedSilenceTime.to]);
+  }, [selectedSilenceTime]);
+  useEffect(() => {
+    setIVRTimeRange([selectedIVRTime.from, selectedIVRTime.to]);
+  }, [selectedIVRTime]);
+  useEffect(() => {
+    setOthersTimeRange([selectedOthersTime.from, selectedOthersTime.to]);
+  }, [selectedOthersTime]);
+  useEffect(() => {
+    setOvertalkRange([selectedOvertalkCount.from, selectedOvertalkCount.to]);
+  }, [selectedOvertalkCount]);
+  // Update cardData only when trendData and dailyData are available
+  useEffect(() => {
+    //console.log(Object.keys(dailyData).length)
+    if (
+      Object.keys(trendData).length !== 0 &&
+      Object.keys(dailyData).length !== 0
+    ) {
+      //console.log("Setting card data with trendData and dailyData",Object.keys(trendData).length)
+      setSilenceTimeRange([selectedSilenceTime.from, selectedSilenceTime.to]);
+      setCardData({
+        "Total Interactions": {
+          value: interactionsTrendData.currentPeriod?.interactions || 0,
+          trend: interactionsTrendData.percentChanges?.interactions || 0,
+          data: dailyData.interactionsArray || [],
+        },
+        "Queue Wait Time": {
+          value: ACDTrendData.currentPeriod?.interactions || 0,
+          trend: ACDTrendData.percentChanges?.interactions || 0,
+          data: dailyData.NFRArray || [],
+        },
 
-  return (
-    <Box sx={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
-      <CarouselContainer ref={containerRef}>
-        {cards.map((card, index) => (
-          <CardWrapper key={index} {...calculateCardStyle(index)}>
-            <StyledCard>
-              <StyledCardContent>
-                <Typography variant="h3" sx={{ 
-                  mb: 3, 
-                  fontWeight: 'bold', 
-                  color: '#333',
-                  transform: 'translateZ(50px)', // Pop out text
-                }}>
-                  {card}
-                </Typography>
-                <Typography variant="h6" sx={{ 
-                  color: '#666',
-                  transform: 'translateZ(30px)', // Pop out text less
-                }}>
-                  Card Content {card}
-                </Typography>
-              </StyledCardContent>
-            </StyledCard>
-          </CardWrapper>
-        ))}
-      </CarouselContainer>
-      
-      {/* Wider edge trigger areas with visual indicator */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: '25%',
-          cursor: 'pointer',
-          zIndex: 1,
-          background: 'linear-gradient(to right, rgba(0,0,0,0.02), transparent)',
-          transition: 'background 0.3s',
-          '&:hover': {
-            background: 'linear-gradient(to right, rgba(0,0,0,0.05), transparent)',
-          }
-        }}
-        onMouseEnter={() => handleEdgeScroll(-1)}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: '25%',
-          cursor: 'pointer',
-          zIndex: 1,
-          background: 'linear-gradient(to left, rgba(0,0,0,0.02), transparent)',
-          transition: 'background 0.3s',
-          '&:hover': {
-            background: 'linear-gradient(to left, rgba(0,0,0,0.05), transparent)',
-          }
-        }}
-        onMouseEnter={() => handleEdgeScroll(1)}
-      />
-    </Box>
-  );
+        "Agent Talk Time": {
+          value: agentTrendData.currentPeriod?.interactions || 0,
+          trend: agentTrendData.percentChanges?.interactions || 0,
+          data: dailyData.negativeFeedbackArray || [],
+        },
+        "Customer Talk Time": {
+          value: customerTrendData.currentPeriod?.interactions || 0,
+          trend: customerTrendData.percentChanges?.interactions || 0,
+          data: dailyData.PFRArray || [],
+        },
+        "Silence Time": {
+          value: silenceTrendData.currentPeriod?.interactions || 0,
+          trend: silenceTrendData.percentChanges?.interactions || 0,
+          data: dailyData.positiveFeedbackArray || [],
+        },
+        "IVR Time": {
+          value: IVRTrendData?.currentPeriod?.interactions || 0,
+          trend: IVRTrendData?.percentChanges?.interactions || 0,
+          data: dailyData.positiveFeedbackArray || [],
+        },
+        Others: {
+          value: othersTrendData?.currentPeriod?.interactions || 0,
+          trend: othersTrendData?.percentChanges?.interactions || 0,
+          data: dailyData.negativeFeedbackArray || [],
+        },
+        "Overtalk Count": {
+          value: overtalkTrendData?.currentPeriod?.interactions || 0,
+          trend: overtalkTrendData?.percentChanges?.interactions || 0,
+          data: dailyData.negativeFeedbackArray || [],
+        },
+      });
+      //setLoading(false); // Data is loaded, update loading state
+    }
+  }, [trendData, dailyData]);
+
+  // Log cardData updates
+  useEffect(() => {
+    // console.log(Object.keys(cardData).length)
+    if (Object.keys(cardData).length !== 0) {
+      // console.log("Updated card data:", cardData);
+      // console.log("Updated card data:", dailyData);
+      setPeriod(dailyData.timePeriod.length);
+      setCards([
+        {
+          category: "Total Interactions",
+          isRemovable: false,
+          description: `This card shows total count of feedback (${trendData.currentPeriod.interactions}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: false,
+          hasReset: true,
+        },
+        {
+          category: "Queue Wait Time",
+          isRemovable: false,
+          description: `This card shows the % of total negative feedback with respect to positve feedback (${trendData.currentPeriod.nfrcurr}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: true,
+          rangeValue: ACDTimeRange,
+          rangeSelect: setACDTimeRange,
+          rangeConfirm: setSelectedACDTime,
+          step: 1,
+          min: 0,
+          max: 100,
+        },
+        {
+          category: "Customer Talk Time",
+          isRemovable: false,
+          description: `This card shows the % of total positive feedback with respect to negative feedback (${trendData.currentPeriod.pfrcurr}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: true,
+          rangeValue: customerTimeRange,
+          rangeSelect: setCustomerTimeRange,
+          rangeConfirm: setSelectedCustomerTime,
+          step: 1,
+          min: 0,
+          max: 100,
+        },
+        {
+          category: "Agent Talk Time",
+          isRemovable: false,
+          description: `This card shows total count of negative feedback (${trendData.currentPeriod.negative}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: true,
+          rangeValue: agentTimeRange,
+          rangeSelect: setAgentTimeRange,
+          rangeConfirm: setSelectedAgentTime,
+          step: 1,
+          min: 0,
+          max: 100,
+        },
+        {
+          category: "Silence Time",
+          isRemovable: false,
+          description: `This card shows total count of positive feedback (${trendData.currentPeriod.positive}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: true,
+          rangeValue: silenceTimeRange,
+          rangeSelect: setSilenceTimeRange,
+          rangeConfirm: setSelectedSilenceTime,
+          step: 1,
+          min: 0,
+          max: 100,
+        },
+        {
+          category: "IVR Time",
+          isRemovable: false,
+          description: `This card shows the % of total negative feedback with respect to positve feedback (${trendData.currentPeriod.nfrcurr}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: true,
+          rangeValue: IVRTimeRange,
+          rangeSelect: setIVRTimeRange,
+          rangeConfirm: setSelectedIVRTime,
+          step: 1,
+          min: 0,
+          max: 100,
+        },
+        {
+          category: "Others",
+          isRemovable: false,
+          description: `This card shows the % of total negative feedback with respect to positve feedback (${trendData.currentPeriod.nfrcurr}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: true,
+          rangeValue: othersTimeRange,
+          rangeSelect: setOthersTimeRange,
+          rangeConfirm: setSelectedOthersTime,
+          step: 1,
+          min: 0,
+          max: 100,
+        },
+        {
+          category: "Overtalk Count",
+          isRemovable: false,
+          description: `This card shows the % of total negative feedback with respect to positve feedback (${trendData.currentPeriod.nfrcurr}) for ${dailyData.timePeriod.length} days.`,
+          hasRange: true,
+          rangeValue: overtalkRange,
+          rangeSelect: setOvertalkRange,
+          rangeConfirm: setSelectedOvertalkCount,
+          step: 10,
+          min: 0,
+          max: 500,
+        },
+      ]);
+      setLoading(false);
+    }
+  }, [cardData]);
+
+  const handleChange = (event, newValue, index) => {
+    setCards((prevCards) =>
+      prevCards.map((card, i) =>
+        i == index ? { ...card, rangeValue: newValue } : card
+      )
+    );
+  };
+
+  const handleConfirm = (index) => {
+    console.log(cards[index]);
+
+    cards[index].rangeConfirm({
+      from: cards[index].rangeValue[0],
+      to: cards[index].rangeValue[1],
+    });
+  };
+
+  const hadleReset = () => {
+    setACDTimeRange([0, 100]);
+  setCustomerTimeRange([0, 100]);
+  setAgentTimeRange([0, 100]);
+  setSilenceTimeRange([0, 100]);
+  setIVRTimeRange([0, 100]);
+  setOthersTimeRange([0, 100]);
+  setOvertalkRange([0, 500]);
+
+  resetTime({from:0,to:100});
+  }
+  if (loading) {
+    return (
+      <div>
+        {" "}
+        <Loading />
+      </div>
+    );
+  } else {
+    return (
+      <div style={{ marginTop: "10px" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "20vh",
+            backgroundColor: "#004E70",
+            padding: "0px",
+            maxWidth: "90%",
+            margin: "20px auto 30px",
+          }}
+        >
+          <Grid
+            container
+            spacing={2}
+            justifyContent="center"
+            sx={{ maxWidth: "110%" }}
+          >
+            {cards.map((card, index) => {
+              const category = card.category;
+              const trend =
+                cardData[category].trend >= 0
+                  ? category == "Total Interactions"
+                    ? "up"
+                    : "down"
+                  : category == "Total Interactions"
+                  ? "down"
+                  : "up";
+              const trendData = cardData[category].trend;
+              const chartColor = trend === "up" ? "#00FF00" : "#991350"; // Green for positive, Purple for negative
+
+              return (
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                  md={2.4}
+                  lg={2.4}
+                  xl={2.4}
+                  key={index}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {card.hasRange ? (
+                      <div className="flex flex-row justify-between">
+                        <Slider
+                          value={card.rangeValue}
+                          onChange={(event, newValue) =>
+                            handleChange(event, newValue, index)
+                          }
+                          valueLabelDisplay="auto"
+                          defaultValue={0}
+                          min={card.min}
+                          step={card.step}
+                          max={card.max}
+                        />
+                        <IconButton
+                          sx={{ padding: 0, margin: "0 0 0 8px" }}
+                          onClick={() => handleConfirm(index)}
+                          size="small"
+                        >
+                          <CheckCircleOutlineIcon
+                            sx={{
+                              color: "#fff",
+                              backgroudColour: "#000",
+                              borderRadius: "50%",
+                              fontSize: 20,
+                            }}
+                          />
+                        </IconButton>
+                      </div>
+                    ) : (
+                      ""
+                    )}
+
+                    <Card
+                      variant="elevation"
+                      sx={{ height: "100%", pb: "0px" }}
+                    >
+                      <Box
+                        sx={{
+                          background:
+                            "linear-gradient(to right, #FF4B00, #FF8000)",
+                          padding: 1,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          borderTopLeftRadius: "2px",
+                          borderTopRightRadius: "2px",
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            whiteSpace: "nowrap",
+                            fontSize: "1rem",
+                            color: "white",
+                            fontFamily: "Optima, sans-serif",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {card.category}
+                        </Typography>
+                        <div className="flex flex-row justify-between">
+                          {card.hasRange ? (
+                            <IconButton
+                              sx={{ padding: 0, margin: 0 }}
+                              size="small"
+                            >
+                              <AccessTimeIcon
+                                sx={{
+                                  color: "#fff",
+                                  backgroudColour: "#000",
+                                  borderRadius: "50%",
+                                  fontSize: 20,
+                                }}
+                              />
+                            </IconButton>
+                          ) : (
+                            ""
+                          )}
+                          {card.hasReset ? (
+                            <IconButton
+                              sx={{ padding: 0, margin: 0 }}
+                              size="small"
+                              onClick={hadleReset}
+                            >
+                              <RestartAltIcon
+                                sx={{
+                                  color: "#fff",
+                                  backgroudColour: "#000",
+                                  borderRadius: "50%",
+                                  fontSize: 20,
+                                }}
+                              />
+                            </IconButton>
+                          ) : (
+                            ""
+                          )}
+                          <Tooltip title={card.description}>
+                            <IconButton
+                              sx={{ padding: 0, margin: "0 0 0 8px" }}
+                              size="small"
+                            >
+                              <InfoIcon
+                                sx={{
+                                  color: "#fff",
+                                  backgroudColour: "#000",
+                                  borderRadius: "50%",
+                                  fontSize: 20,
+                                }}
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        </div>
+
+                        {card.isRemovable && (
+                          <IconButton
+                            onClick={() =>
+                              setCards(cards.filter((_, i) => i !== index))
+                            }
+                            sx={{ color: "#002B5B" }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        )}
+                      </Box>
+
+                      <CardContent
+                        sx={{
+                          backgroundColor: "white",
+                          padding: "0px !important",
+                        }}
+                      >
+                        <Stack
+                          direction="column"
+                          sx={{
+                            justifyContent: "space-between",
+                            gap: 1,
+                            padding: "0px",
+                          }}
+                        >
+                          <Stack
+                            sx={{
+                              justifyContent: "space-between",
+                              padding: "5px 5px 0px",
+                            }}
+                          >
+                            <Stack
+                              direction="row"
+                              sx={{
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <Typography
+                                variant="h6"
+                                component="p"
+                                sx={{
+                                  fontSize: ".9rem",
+                                  color: trend === "up" ? "#00FF00" : "#991350",
+                                }}
+                              >
+                                {`${cardData[card.category]?.value}${
+                                  card.category === "PFR" ||
+                                  card.category === "NFR"
+                                    ? "%"
+                                    : ""
+                                }` || 0}
+                              </Typography>
+                              <Tooltip
+                                title={`There was a net ${Math.abs(
+                                  cardData[card.category]?.trend || 0
+                                ).toFixed(2)}% ${
+                                  trendData > 0 ? "increase" : "decrease"
+                                } in ${
+                                  card.category
+                                } in comparision to preceding ${period} days.`}
+                              >
+                                <Chip
+                                  size="small"
+                                  color={trend === "up" ? "success" : "error"}
+                                  sx={{ fontSize: ".9rem" }}
+                                  label={`${trendData > 0 ? "+" : ""}${(
+                                    cardData[card.category]?.trend || 0
+                                  ).toFixed(2)}%`}
+                                />
+                              </Tooltip>
+                            </Stack>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "text.secondary",
+                                fontSize: ".9rem",
+                              }}
+                            >
+                              For {period} Days
+                            </Typography>
+                          </Stack>
+
+                          {/* Sparkline chart */}
+                          <Box
+                            sx={{ width: "100%", height: 70, padding: "0px" }}
+                          >
+                            <SparkLineChart
+                              colors={[chartColor]}
+                              data={cardData[card.category]?.data || []}
+                              area
+                              showHighlight
+                              showTooltip
+                              sx={{
+                                [`& .${areaElementClasses.root}`]: {
+                                  fill: `url(#area-gradient-${card.category})`,
+                                },
+                              }}
+                            >
+                              <AreaGradient
+                                color={chartColor}
+                                id={`area-gradient-${card.category}`}
+                              />
+                            </SparkLineChart>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              );
+            })}
+          </Grid>
+        </Box>
+      </div>
+    );
+  }
 };
 
-export default TrialCards;
+export default CategoriesReporting;
