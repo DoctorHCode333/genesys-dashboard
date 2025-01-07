@@ -1,13 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useSpring, animated } from 'react-spring';
+import React, { useRef, useEffect, useState } from 'react';
 import { Box, Card, CardContent, Typography } from '@mui/material';
+import { useSpring, animated } from 'react-spring';
 import { styled } from '@mui/system';
 
-const Container = styled(Box)({
+// Styled components
+const CarouselContainer = styled(Box)({
   display: 'flex',
   overflowX: 'hidden',
+  justifyContent: 'center',
+  alignItems: 'center',
   position: 'relative',
-  height: '300px', // Set height according to your preference
+  height: '300px',
   cursor: 'pointer',
   '&:hover': {
     scrollbarWidth: 'thin',
@@ -25,16 +28,17 @@ const Container = styled(Box)({
   },
 });
 
-const CardWrapper = styled(animated.div)(({ rotate, scale }) => ({
+const CardWrapper = styled(animated.div)({
   flexShrink: 0,
-  width: '20%', // Five cards in the viewport
+  width: '20%', // Five cards in viewport
   height: '100%',
-  transform: `perspective(1000px) rotateY(${rotate}deg) scale(${scale})`,
-  transformOrigin: 'center',
-  transition: 'transform 0.3s',
-}));
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  perspective: '1000px',
+});
 
-const StyledCard = styled(Card)({
+const StyledCard = styled(Card)(({ scale }) => ({
   width: '100%',
   height: '100%',
   boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
@@ -42,9 +46,11 @@ const StyledCard = styled(Card)({
   justifyContent: 'center',
   alignItems: 'center',
   borderRadius: '10px',
-});
+  transform: `scale(${scale})`,
+  transition: 'transform 0.3s ease',
+}));
 
-const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
+const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8, 9] }) => {
   const containerRef = useRef();
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -53,7 +59,6 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
     const scrollLeft = container.scrollLeft;
     const containerWidth = container.clientWidth;
     const totalScrollWidth = container.scrollWidth - containerWidth;
-
     setScrollProgress(scrollLeft / totalScrollWidth);
   };
 
@@ -64,9 +69,9 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
     const width = rect.width;
 
     if (x < width * 0.2) {
-      container.scrollBy({ left: -50, behavior: 'smooth' }); // Increased scroll speed
+      container.scrollBy({ left: -50, behavior: 'smooth' }); // Faster scrolling on the left edge
     } else if (x > width * 0.8) {
-      container.scrollBy({ left: 50, behavior: 'smooth' }); // Increased scroll speed
+      container.scrollBy({ left: 50, behavior: 'smooth' }); // Faster scrolling on the right edge
     }
   };
 
@@ -77,15 +82,14 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
   }, []);
 
   return (
-    <Container ref={containerRef} onMouseMove={handleMouseMove}>
+    <CarouselContainer ref={containerRef} onMouseMove={handleMouseMove}>
       {cards.map((card, index) => {
         const position = (index - scrollProgress * (cards.length - 1)) / (cards.length - 1);
-        const rotate = position * -30;
-        const scale = 1 - Math.abs(position) * 0.3;
+        const scale = 1 - Math.abs(position) * 0.4; // Adjusted scaling for better symmetry
 
         return (
-          <CardWrapper key={index} rotate={rotate} scale={scale}>
-            <StyledCard>
+          <CardWrapper key={index}>
+            <StyledCard scale={scale}>
               <CardContent>
                 <Typography variant="h5">Card {card}</Typography>
                 <Typography variant="body2">Some content here...</Typography>
@@ -94,7 +98,7 @@ const TrialCards = ({ cards = [1, 2, 3, 4, 5, 6, 7, 8] }) => {
           </CardWrapper>
         );
       })}
-    </Container>
+    </CarouselContainer>
   );
 };
 
