@@ -1,93 +1,77 @@
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+/* Container */
+.p-tabview {
+  width: 100%;
+  background: white;
+}
 
-const data = [
-  ['Page A', 4000, 2400, 2400, 100, 200, 300, 400, 500],
-  ['Page B', 3000, 1398, 2210, 150, 250, 350, 450, 550],
-  // More data
-];
+/* Tab navigation */
+.p-tabview-nav {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+}
 
-const MyBarChart = () => (
-  <BarChart
-    width={600}
-    height={300}
-    data={data.map((d) => ({
-      name: d[0],
-      uv: d[1],
-      pv: d[2],
-      amt: d[3],
-      other1: d[4],
-      other2: d[5],
-      other3: d[6],
-      other4: d[7],
-      other5: d[8],
-    }))}
-  >
-    <XAxis dataKey="name" />
-    <YAxis />
-    <Tooltip
-      content={({ active, payload, label }) => {
-        if (active && payload && payload.length) {
-          const dataArray = payload[0].payload;
-          const kvpArray = [
-            ['Label', label],
-            ['UV', dataArray.uv],
-            ['PV', dataArray.pv],
-            ['AMT', dataArray.amt],
-            ['Other1', dataArray.other1],
-            ['Other2', dataArray.other2],
-            ['Other3', dataArray.other3],
-            ['Other4', dataArray.other4],
-            ['Other5', dataArray.other5],
-          ];
+/* Tab items */
+.p-tabview-nav li {
+  margin-right: 2rem;
+}
 
-          const leftKVPs = kvpArray.slice(0, 5);
-          const rightKVPs = kvpArray.slice(5);
+/* Tab links */
+.p-tabview-title {
+  display: inline-block;
+  padding: 0.75rem 0;
+  color: #64748b;
+  font-weight: 500;
+  text-decoration: none;
+  position: relative;
+  cursor: pointer;
+}
 
-          return (
-            <div className="custom-tooltip" style={tooltipStyle}>
-              <div style={columnStyle}>
-                {leftKVPs.map(([key, value], index) => (
-                  <p key={index} style={kvpStyle}>
-                    <strong>{key}:</strong> {value}
-                  </p>
-                ))}
-              </div>
-              <div style={columnStyle}>
-                {rightKVPs.map(([key, value], index) => (
-                  <p key={index} style={kvpStyle}>
-                    <strong>{key}:</strong> {value}
-                  </p>
-                ))}
-              </div>
-            </div>
-          );
-        }
-        return null;
-      }}
-    />
-    <Bar dataKey="uv" fill="#8884d8" />
-    <Bar dataKey="pv" fill="#82ca9d" />
-  </BarChart>
-);
+/* Active tab state */
+.p-tabview-nav li.p-highlight .p-tabview-title {
+  color: #6366f1;
+}
 
-const tooltipStyle = {
-  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  padding: '10px',
-  border: '1px solid #ccc',
-  borderRadius: '5px',
-  display: 'flex',
-  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-  animation: 'fadeIn 0.3s ease-in-out',
-};
+/* Highlight bar for active tab */
+.p-tabview-nav li.p-highlight .p-tabview-title::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #6366f1;
+}
 
-const columnStyle = {
-  marginRight: '20px',
-};
+/* Content panels container */
+.p-tabview-panels {
+  position: relative;
+  padding: 1rem 0;
+}
 
-const kvpStyle = {
-  margin: 0,
-  fontSize: '14px',
-};
+/* Individual panels */
+.p-tabview-panel {
+  display: none;
+  border-top: 2px solid #6366f1;
+  margin-top: -2px;
+}
 
-export default MyBarChart;
+/* Active panel */
+.p-tabview-panel.p-tabview-panel-active {
+  display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .p-tabview-nav li {
+    margin-right: 1rem;
+  }
+  
+  .p-tabview-title {
+    padding: 0.5rem 0;
+    font-size: 0.875rem;
+  }
+}
