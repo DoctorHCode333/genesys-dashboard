@@ -1,116 +1,93 @@
-/* Base styles for tab container */
-.p-tabview {
-  position: relative;
-  width: 100%;
-}
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
-/* Tab navigation styles */
-.p-tabview-nav {
-  position: relative;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-}
+const data = [
+  ['Page A', 4000, 2400, 2400, 100, 200, 300, 400, 500],
+  ['Page B', 3000, 1398, 2210, 150, 250, 350, 450, 550],
+  // More data
+];
 
-/* Individual tab header */
-.p-tabview-nav li {
-  position: relative;
-  margin: 0;
-  padding: 0;
-  flex: 0 1 auto;
-}
+const MyBarChart = () => (
+  <BarChart
+    width={600}
+    height={300}
+    data={data.map((d) => ({
+      name: d[0],
+      uv: d[1],
+      pv: d[2],
+      amt: d[3],
+      other1: d[4],
+      other2: d[5],
+      other3: d[6],
+      other4: d[7],
+      other5: d[8],
+    }))}
+  >
+    <XAxis dataKey="name" />
+    <YAxis />
+    <Tooltip
+      content={({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+          const dataArray = payload[0].payload;
+          const kvpArray = [
+            ['Label', label],
+            ['UV', dataArray.uv],
+            ['PV', dataArray.pv],
+            ['AMT', dataArray.amt],
+            ['Other1', dataArray.other1],
+            ['Other2', dataArray.other2],
+            ['Other3', dataArray.other3],
+            ['Other4', dataArray.other4],
+            ['Other5', dataArray.other5],
+          ];
 
-/* Tab title styling */
-.p-tabview-nav .p-tabview-title {
-  padding: 0.75rem 1rem;
-  color: #6b7280;
-  transition: color 0.2s ease;
-  display: block;
-  cursor: pointer;
-}
+          const leftKVPs = kvpArray.slice(0, 5);
+          const rightKVPs = kvpArray.slice(5);
 
-/* Active tab styling */
-.p-tabview-nav li.p-highlight .p-tabview-title {
-  color: #6366f1;
-}
+          return (
+            <div className="custom-tooltip" style={tooltipStyle}>
+              <div style={columnStyle}>
+                {leftKVPs.map(([key, value], index) => (
+                  <p key={index} style={kvpStyle}>
+                    <strong>{key}:</strong> {value}
+                  </p>
+                ))}
+              </div>
+              <div style={columnStyle}>
+                {rightKVPs.map(([key, value], index) => (
+                  <p key={index} style={kvpStyle}>
+                    <strong>{key}:</strong> {value}
+                  </p>
+                ))}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      }}
+    />
+    <Bar dataKey="uv" fill="#8884d8" />
+    <Bar dataKey="pv" fill="#82ca9d" />
+  </BarChart>
+);
 
-/* Animated underline indicator */
-.p-tabview-nav li.p-highlight::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: #6366f1;
-  transform-origin: left center;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+const tooltipStyle = {
+  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  padding: '10px',
+  border: '1px solid #ccc',
+  borderRadius: '5px',
+  display: 'flex',
+  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+  animation: 'fadeIn 0.3s ease-in-out',
+};
 
-/* Tab content panel */
-.p-tabview-panels {
-  position: relative;
-  padding: 1.25rem 0;
-  overflow: hidden; /* Prevent panel overflow */
-}
+const columnStyle = {
+  marginRight: '20px',
+};
 
-/* Individual tab panel */
-.p-tabview-panel {
-  position: relative;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: 
-    opacity 0.3s ease,
-    transform 0.3s ease;
-  padding-top: 2px; /* Add space for HR */
-}
+const kvpStyle = {
+  margin: 0,
+  fontSize: '14px',
+};
 
-/* Active panel */
-.p-tabview-panel.p-tabview-panel-active {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* HR styling within panels */
-.p-tabview-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -1rem;
-  right: -1rem;
-  height: 2px;
-  background-color: #6366f1;
-  transform: scaleX(0);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Active panel HR animation */
-.p-tabview-panel.p-tabview-panel-active::before {
-  transform: scaleX(1);
-}
-
-/* Optional: Scrollable tabs support */
-.p-tabview-scrollable .p-tabview-nav-container {
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-/* Optional: Custom scrollbar styling */
-.p-tabview-scrollable .p-tabview-nav-container::-webkit-scrollbar {
-  height: 5px;
-}
-
-.p-tabview-scrollable .p-tabview-nav-container::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 2.5px;
-}
-
-/* Optional: Responsive adjustments */
-@media (max-width: 640px) {
-  .p-tabview-nav .p-tabview-title {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-}
+export default MyBarChart;
