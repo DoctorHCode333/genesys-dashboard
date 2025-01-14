@@ -49,19 +49,48 @@
 /* Content panels container */
 .p-tabview-panels {
   position: relative;
-  padding: 1rem 0;
+  padding-top: 2px; /* Space for the HR */
 }
 
 /* Individual panels */
 .p-tabview-panel {
-  display: none;
-  border-top: 2px solid #6366f1;
-  margin-top: -2px;
+  position: relative;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
 }
 
 /* Active panel */
 .p-tabview-panel.p-tabview-panel-active {
+  visibility: visible;
+  height: auto;
+  overflow: visible;
+}
+
+/* Horizontal rule for panels */
+.p-tabview-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #6366f1;
+  z-index: 1;
+}
+
+/* Panel content wrapper */
+.p-tabview-panel-content {
+  padding-top: 1rem;
+  position: relative;
+  z-index: 0;
+}
+
+/* Ensure Aspect components are visible */
+.p-tabview-panel-active .aspect-component {
   display: block;
+  width: 100%;
+  margin-top: 1rem;
 }
 
 /* Responsive adjustments */
