@@ -11,6 +11,7 @@
   margin-bottom: 0;
   padding: 0;
   list-style: none;
+  display: flex;
 }
 
 /* Individual tab header */
@@ -18,6 +19,7 @@
   position: relative;
   margin: 0;
   padding: 0;
+  flex: 0 1 auto;
 }
 
 /* Tab title styling */
@@ -25,6 +27,8 @@
   padding: 0.75rem 1rem;
   color: #6b7280;
   transition: color 0.2s ease;
+  display: block;
+  cursor: pointer;
 }
 
 /* Active tab styling */
@@ -49,6 +53,7 @@
 .p-tabview-panels {
   position: relative;
   padding: 1.25rem 0;
+  overflow: hidden; /* Prevent panel overflow */
 }
 
 /* Individual tab panel */
@@ -59,6 +64,7 @@
   transition: 
     opacity 0.3s ease,
     transform 0.3s ease;
+  padding-top: 2px; /* Add space for HR */
 }
 
 /* Active panel */
@@ -68,20 +74,20 @@
 }
 
 /* HR styling within panels */
-.p-tabview-panel hr {
+.p-tabview-panel::before {
+  content: '';
   position: absolute;
   top: 0;
   left: -1rem;
   right: -1rem;
   height: 2px;
   background-color: #6366f1;
-  border: none;
   transform: scaleX(0);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Active panel HR animation */
-.p-tabview-panel.p-tabview-panel-active hr {
+.p-tabview-panel.p-tabview-panel-active::before {
   transform: scaleX(1);
 }
 
@@ -107,4 +113,4 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
   }
-      }
+}
