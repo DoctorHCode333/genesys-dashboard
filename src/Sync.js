@@ -12,7 +12,7 @@ const CustomSlider = () => {
         sx={{
           color: "transparent",
           "& .MuiSlider-track": {
-            background: "linear-gradient(90deg, #FF7F00, #FF4500)", // Orange gradient
+            background: "linear-gradient(90deg, #FF7F00, #FF4500)", // Orange gradient track
             border: "none",
           },
           "& .MuiSlider-rail": {
@@ -20,8 +20,23 @@ const CustomSlider = () => {
             opacity: 1,
           },
           "& .MuiSlider-thumb": {
-            background: "linear-gradient(90deg, #FF7F00, #FF4500)", // Orange gradient thumb
-            border: "2px solid white",
+            backgroundColor: "#fff", // White thumb
+            border: "3px solid transparent", // Transparent border
+            backgroundClip: "padding-box",
+            position: "relative",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-3px",
+              left: "-3px",
+              right: "-3px",
+              bottom: "-3px",
+              borderRadius: "50%",
+              background: "linear-gradient(90deg, #FF7F00, #FF4500)", // Orange gradient border
+              zIndex: -1,
+            },
+            width: 18, // Adjust size
+            height: 18,
             "&:hover, &.Mui-active": {
               boxShadow: "0px 0px 8px rgba(255, 127, 0, 0.5)",
             },
