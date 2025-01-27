@@ -51,3 +51,17 @@ const CustomSlider = () => {
 };
 
 export default CustomSlider;
+
+
+"& .MuiSlider-thumb": {
+    backgroundColor: "#fff",
+    padding: "2px", // Create space for the gradient
+    backgroundImage: "linear-gradient(90deg, #FF7F00, #FF4500)",
+    backgroundOrigin: "border-box",
+    backgroundClip: "content-box, border-box",
+    border: "double 2px transparent",
+    borderRadius: "50%",
+    "&:hover, &.Mui-active": {
+      boxShadow: "0px 0px 8px rgba(255, 127, 0, 0.5)",
+    },
+  },
